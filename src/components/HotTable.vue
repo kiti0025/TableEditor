@@ -1,4 +1,7 @@
 <template>
+<div>
+    <TableToolbar v-if="hotTableRef?.hotInstance" :hot-instance="hotTableRef.hotInstance" />
+  </div>
   <div class="spreadsheet-container">
     <HotTable
       ref="hotTableRef"
@@ -17,7 +20,7 @@ import { registerLanguageDictionary, zhCN } from 'handsontable/i18n'
 
 // 2. 导入样式
 import 'handsontable/dist/handsontable.full.min.css'
-
+import TableToolbar from './TableToolbar.vue';
 // 3. 初始化配置
 registerAllModules()
 registerLanguageDictionary('zh-CN', zhCN)
@@ -53,12 +56,25 @@ const hotSettings: Record<string, any> = {
   stretchH: 'all', // 水平拉伸所有列
   autoWrapRow: true, // 自动换行
   autoWrapCol: true, // 自动换列
+
+  cells: function(row: number, col: number) {
+    const cellProperties = {};
+    // 配置单元格以支持样式
+    return cellProperties;
+  },
   
   // 交互配置
   selectionMode: 'multiple', // 支持多选
   // copyPaste: true, // 启用复制粘贴
   manualRowResize: true, // 允许手动调整行高
   manualColumnResize: true, // 允许手动调整列宽
+
+  // 行列移动功能
+  manualRowMove: true,
+  manualColumnMove: true,
+  undo: true,
+  redo: true,
+
   
   // 右键菜单 - 使用内置菜单项保持简洁
   contextMenu: [
@@ -78,7 +94,15 @@ const hotSettings: Record<string, any> = {
   ],
   
   // 合并单元格功能 - 启用插件
-  mergeCells: true
+  mergeCells: true,
+
+    // 确保表格可以接收自定义样式
+  className: 'hot-table-with-custom-styles',
+  
+  // 监听表格渲染完成事件
+  afterRender: function() {
+    console.log('Table rendered successfully');
+  }
 }
 
 // 6. 组件挂载后处理
