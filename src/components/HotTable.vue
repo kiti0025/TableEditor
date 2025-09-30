@@ -56,7 +56,9 @@ const hotSettings: Record<string, any> = {
   
   // 交互配置
   selectionMode: 'multiple', // 支持多选
-  copyPaste: true, // 启用复制粘贴
+  // copyPaste: true, // 启用复制粘贴
+  manualRowResize: true, // 允许手动调整行高
+  manualColumnResize: true, // 允许手动调整列宽
   
   // 右键菜单 - 使用内置菜单项保持简洁
   contextMenu: [
