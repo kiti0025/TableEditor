@@ -17,6 +17,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { HotTable } from '@handsontable/vue3'
 import { registerAllModules } from 'handsontable/registry'
 import { registerLanguageDictionary, zhCN } from 'handsontable/i18n'
+import Handsontable from 'handsontable'
 
 // 2. 导入样式
 import 'handsontable/dist/handsontable.full.min.css'
@@ -24,6 +25,20 @@ import TableToolbar from './TableToolbar.vue';
 // 3. 初始化配置
 registerAllModules()
 registerLanguageDictionary('zh-CN', zhCN)
+
+// // 添加自定义渲染器
+// const CustomTextRenderer = function(
+//   instance: Handsontable,
+//   td: HTMLTableCellElement,
+//   row: number,
+//   col: number,
+//   prop: string | number,
+//   value: any,
+//   cellProperties: Handsontable.CellProperties
+// ) {
+//   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
+//   td.style.verticalAlign = 'middle';
+// };
 
 // 4. 组件引用和响应式数据
 const hotTableRef = ref(null)
@@ -57,11 +72,12 @@ const hotSettings: Record<string, any> = {
   autoWrapRow: true, // 自动换行
   autoWrapCol: true, // 自动换列
 
-  cells: function(row: number, col: number) {
-    const cellProperties = {};
-    // 配置单元格以支持样式
-    return cellProperties;
-  },
+  // 完全移除这个cells配置，让TableToolbar中的配置生效
+// cells: function(row: number, col: number, prop: string | number) {
+//     return {
+//       // renderer: CustomTextRenderer // 关键：指定自定义渲染器
+//     };
+//   },
   
   // 交互配置
   selectionMode: 'multiple', // 支持多选
@@ -127,6 +143,7 @@ function verifyAndInitializePlugins(): void {
   try {
     // 验证合并单元格插件状态
     const mergeCellsPlugin = hotInstance.getPlugin('mergeCells')
+    
     
     if (mergeCellsPlugin) {
       console.log('合并单元格插件已正确初始化')

@@ -64,7 +64,7 @@
         <option value="left" title="左对齐">⬅</option>
         <option value="center" title="居中对齐">⏺</option>
         <option value="right" title="右对齐">➡</option>
-        <option value="justify" title="两端对齐">⬌</option>
+        <!-- <option value="justify" title="两端对齐">⬌</option> -->
       </select>
     </div>
 
@@ -174,7 +174,15 @@ const CustomTextRenderer = function(
   // 应用所有样式
   const cellKey = getCellKey(row, col);
   const styles = cellStyles[cellKey];
-  
+
+  // 检测单元格是否被合并
+    const isMergedCell = instance.getPlugin('mergeCells')?.isMerged(row, col) || false;
+
+    td.style.verticalAlign = verticalAlign.value; // 默认使用组件中定义的垂直对齐值
+    td.style.textAlign = textAlign.value; // 默认使用组件中定义的水平对齐值
+    td.style.fontFamily = fontFamily.value; // 默认字体
+    td.style.fontSize = fontSize.value; // 默认字号
+
   if (styles) {
     if (styles.fontSize) td.style.fontSize = styles.fontSize;
     if (styles.fontFamily) td.style.fontFamily = styles.fontFamily;
@@ -298,6 +306,30 @@ onMounted(() => {
       }
     });
     
+       // 初始化所有单元格的默认垂直居中样式到cellStyles对象并更新DOM
+    const rowCount = props.hotInstance.countRows();
+    const colCount = props.hotInstance.countCols();
+    
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        const cellKey = getCellKey(row, col);
+        
+        if (!cellStyles[cellKey]) {
+          cellStyles[cellKey] = {};
+        }
+        
+        // 设置默认垂直居中样式到cellStyles对象
+        cellStyles[cellKey]['verticalAlign'] = verticalAlign.value;
+        
+        // 同时更新DOM元素的样式
+        const td = props.hotInstance.getCell(row, col) as HTMLTableCellElement;
+        if (td) {
+          td.style.verticalAlign = verticalAlign.value;
+        }
+      }
+    }
+
+
     console.log('Custom renderer set up successfully');
   }
 });
