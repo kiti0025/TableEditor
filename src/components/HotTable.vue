@@ -144,7 +144,6 @@ function verifyAndInitializePlugins(): void {
     // 验证合并单元格插件状态
     const mergeCellsPlugin = hotInstance.getPlugin('mergeCells')
     
-    
     if (mergeCellsPlugin) {
       console.log('合并单元格插件已正确初始化')
       

@@ -175,24 +175,29 @@ const CustomTextRenderer = function(
   const cellKey = getCellKey(row, col);
   const styles = cellStyles[cellKey];
 
-  // 检测单元格是否被合并
-    const isMergedCell = instance.getPlugin('mergeCells')?.isMerged(row, col) || false;
-
-    td.style.verticalAlign = verticalAlign.value; // 默认使用组件中定义的垂直对齐值
-    td.style.textAlign = textAlign.value; // 默认使用组件中定义的水平对齐值
-    td.style.fontFamily = fontFamily.value; // 默认字体
-    td.style.fontSize = fontSize.value; // 默认字号
-
-  if (styles) {
-    if (styles.fontSize) td.style.fontSize = styles.fontSize;
-    if (styles.fontFamily) td.style.fontFamily = styles.fontFamily;
-    if (styles.fontWeight) td.style.fontWeight = styles.fontWeight;
-    if (styles.fontStyle) td.style.fontStyle = styles.fontStyle;
-    if (styles.textDecoration) td.style.textDecoration = styles.textDecoration;
-    if (styles.textAlign) td.style.textAlign = styles.textAlign;
-    if (styles.verticalAlign) td.style.verticalAlign = styles.verticalAlign;
-    if (styles.color) td.style.color = styles.color;
-    if (styles.backgroundColor) td.style.backgroundColor = styles.backgroundColor;
+  // 关键修改：只有当单元格没有自定义样式时，才应用默认样式
+  if (!styles) {
+    // 没有自定义样式时使用默认值
+    td.style.verticalAlign = verticalAlign.value;
+    td.style.textAlign = textAlign.value;
+    td.style.fontFamily = fontFamily.value;
+    td.style.fontSize = fontSize.value;
+    td.style.fontWeight = 'normal';
+    td.style.fontStyle = 'normal';
+    td.style.textDecoration = 'none';
+    td.style.color = textColor.value;
+    td.style.backgroundColor = backgroundColor.value;
+  } else {
+    // 有自定义样式时，只应用已存储的样式，不使用默认值
+    if (styles.fontSize !== undefined) td.style.fontSize = styles.fontSize;
+    if (styles.fontFamily !== undefined) td.style.fontFamily = styles.fontFamily;
+    if (styles.fontWeight !== undefined) td.style.fontWeight = styles.fontWeight;
+    if (styles.fontStyle !== undefined) td.style.fontStyle = styles.fontStyle;
+    if (styles.textDecoration !== undefined) td.style.textDecoration = styles.textDecoration;
+    if (styles.textAlign !== undefined) td.style.textAlign = styles.textAlign;
+    if (styles.verticalAlign !== undefined) td.style.verticalAlign = styles.verticalAlign;
+    if (styles.color !== undefined) td.style.color = styles.color;
+    if (styles.backgroundColor !== undefined) td.style.backgroundColor = styles.backgroundColor;
   }
 };
 
