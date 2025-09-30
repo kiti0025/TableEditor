@@ -2,11 +2,10 @@
   <div class="table-toolbar">
     <!-- 文本样式控制 -->
     <div class="toolbar-section">
-      <label>字体:</label>
-      <select v-model="fontFamily" @change="applyFontFamily" @mousedown.stop>
+      <select v-model="fontFamily" @change="applyFontFamily" @mousedown.stop title="字体">
         <option value="Arial, sans-serif">Arial</option>
         <option value="Times New Roman, serif">新罗马</option>
-        <option value="Courier New, monospace">Courier New</option>
+        <!-- <option value="Courier New, monospace">Courier New</option> -->
         <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
         <option value="SimSun, serif">宋体</option>
         <option value="NSimSun, serif">新宋体</option>
@@ -16,8 +15,7 @@
         <option value="SimHei, sans-serif">黑体</option>
       </select>
 
-      <label>字号:</label>
-      <select v-model="fontSize" @change="applyFontSize" @mousedown.stop>
+      <select v-model="fontSize" @change="applyFontSize" @mousedown.stop title="字号">
         <option v-for="size in fontSizeOptions" :key="size" :value="size + 'px'">
           {{ size }}
         </option>
@@ -62,43 +60,24 @@
 
     <!-- 对齐方式 -->
     <div class="toolbar-section">
-      <button 
-        class="toolbar-btn" 
-        :class="{ active: textAlign === 'left' }" 
-        @mousedown.stop="setTextAlign('left')"
-        title="左对齐"
-      >
-        📝
-      </button>
-      <button 
-        class="toolbar-btn" 
-        :class="{ active: textAlign === 'center' }" 
-        @mousedown.stop="setTextAlign('center')"
-        title="居中对齐"
-      >
-        📋
-      </button>
-      <button 
-        class="toolbar-btn" 
-        :class="{ active: textAlign === 'right' }" 
-        @mousedown.stop="setTextAlign('right')"
-        title="右对齐"
-      >
-        📄
-      </button>
-      <button 
-        class="toolbar-btn" 
-        :class="{ active: textAlign === 'justify' }" 
-        @mousedown.stop="setTextAlign('justify')"
-        title="两端对齐"
-      >
-        📊
-      </button>
+      <select v-model="textAlign" @change="setTextAlign(textAlign)" @mousedown.stop title="水平对齐">
+        <option value="left" title="左对齐">⬅</option>
+        <option value="center" title="居中对齐">⏺</option>
+        <option value="right" title="右对齐">➡</option>
+        <option value="justify" title="两端对齐">⬌</option>
+      </select>
+    </div>
+
+    <div class="toolbar-section">
+      <select v-model="verticalAlign" @change="setVerticalAlign(verticalAlign)" @mousedown.stop title="垂直对齐">
+        <option value="top" title="顶部对齐">⬆</option>
+        <option value="middle" title="垂直居中">⏺</option>
+        <option value="bottom" title="底部对齐">⬇</option>
+      </select>
     </div>
 
     <!-- 颜色设置 -->
     <div class="toolbar-section">
-      <label>文字颜色:</label>
       <input 
         type="color" 
         v-model="textColor" 
@@ -107,7 +86,6 @@
         title="文字颜色"
       >
       
-      <label>背景色:</label>
       <input 
         type="color" 
         v-model="backgroundColor" 
@@ -144,6 +122,7 @@ const isStrikethrough = ref<boolean>(false);
 
 // 对齐方式
 const textAlign = ref<string>('left');
+const verticalAlign = ref<string>('middle');
 
 // 颜色设置
 const textColor = ref<string>('#000000');
@@ -172,7 +151,7 @@ const getSelectedRange = (): any => {
   };
 };
 
-// 严格按照您提供的格式创建自定义渲染器
+// 创建自定义渲染器
 const CustomTextRenderer = function(
   instance: Handsontable,
   td: HTMLTableCellElement,
@@ -203,6 +182,7 @@ const CustomTextRenderer = function(
     if (styles.fontStyle) td.style.fontStyle = styles.fontStyle;
     if (styles.textDecoration) td.style.textDecoration = styles.textDecoration;
     if (styles.textAlign) td.style.textAlign = styles.textAlign;
+    if (styles.verticalAlign) td.style.verticalAlign = styles.verticalAlign;
     if (styles.color) td.style.color = styles.color;
     if (styles.backgroundColor) td.style.backgroundColor = styles.backgroundColor;
   }
@@ -282,10 +262,16 @@ const updateTextDecoration = () => {
   applyStyleToSelected('textDecoration', decorations.length > 0 ? decorations.join(' ') : 'none');
 };
 
-// 对齐方式函数
+// 水平对齐方式函数
 const setTextAlign = (align: string) => {
   textAlign.value = align;
   applyStyleToSelected('textAlign', align);
+};
+
+// 垂直对齐方式函数
+const setVerticalAlign = (align: string) => {
+  verticalAlign.value = align;
+  applyStyleToSelected('verticalAlign', align);
 };
 
 // 颜色设置函数
