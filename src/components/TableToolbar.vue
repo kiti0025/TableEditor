@@ -277,13 +277,13 @@ const updateTextDecoration = () => {
 
 // 水平对齐方式函数
 const setTextAlign = (align: string) => {
-  textAlign.value = align;
+  // textAlign.value = align;
   applyStyleToSelected('textAlign', align);
 };
 
 // 垂直对齐方式函数
 const setVerticalAlign = (align: string) => {
-  verticalAlign.value = align;
+  // verticalAlign.value = align;
   applyStyleToSelected('verticalAlign', align);
 };
 
@@ -333,11 +333,60 @@ onMounted(() => {
         }
       }
     }
+     // 添加单元格选择变化监听，用于更新按钮状态
+    props.hotInstance.addHook('afterSelection', updateToolbarButtonStates);
+    props.hotInstance.addHook('afterSelectionEnd', updateToolbarButtonStates);
 
+     updateToolbarButtonStates();// 初始化时更新一次按钮状态
 
     console.log('Custom renderer set up successfully');
   }
 });
+
+// 更新工具栏按钮状态以匹配选中单元格的样式
+const updateToolbarButtonStates = () => {
+  if (!props.hotInstance) return;
+  
+  const range = getSelectedRange();
+  if (!range) {
+    // 没有选中单元格时，重置按钮状态
+    isBold.value = false;
+    isItalic.value = false;
+    isUnderline.value = false;
+    isStrikethrough.value = false;
+    textAlign.value = 'left'; 
+    verticalAlign.value = 'middle'; 
+    fontFamily.value = 'Arial, sans-serif'; 
+    fontSize.value = '14px'; 
+    return;
+  }
+  
+  // 获取第一个选中单元格的样式作为参考
+  const firstCellKey = getCellKey(range.startRow, range.startCol);
+  const firstCellStyles = cellStyles[firstCellKey];
+  
+  // 如果单元格有自定义样式，根据样式更新按钮状态
+  if (firstCellStyles) {
+    isBold.value = firstCellStyles.fontWeight === 'bold';
+    isItalic.value = firstCellStyles.fontStyle === 'italic';
+    isUnderline.value = firstCellStyles.textDecoration?.includes('underline') || false;
+    isStrikethrough.value = firstCellStyles.textDecoration?.includes('line-through') || false;
+    textAlign.value = firstCellStyles.textAlign || 'left';
+    verticalAlign.value = firstCellStyles.verticalAlign || 'middle';
+    fontFamily.value = firstCellStyles.fontFamily || 'Arial, sans-serif';
+    fontSize.value = firstCellStyles.fontSize || '14px';
+  } else {
+    // 没有自定义样式时，重置按钮状态
+    isBold.value = false;
+    isItalic.value = false;
+    isUnderline.value = false;
+    isStrikethrough.value = false;
+    textAlign.value = 'left';
+    verticalAlign.value = 'middle';
+    fontFamily.value = 'Arial, sans-serif';
+    fontSize.value = '14px';
+  }
+};
 </script>
 
 <style scoped>
