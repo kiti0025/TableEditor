@@ -60,6 +60,8 @@ const hotSettings: Record<string, any> = {
   // 尺寸配置
   width: '100%',
   height: '100vh',
+  // autoRowSize: true, // 自动调整行高
+  // autoColumnSize: true,  // 添加自动列宽调整
   rowHeights: 25,
   colWidths: 100,
   minCols: 26,
@@ -90,6 +92,7 @@ const hotSettings: Record<string, any> = {
   // 行列移动功能
   manualRowMove: true,
   manualColumnMove: true,
+  //撤销和重做
   undo: true,
   redo: true,
 

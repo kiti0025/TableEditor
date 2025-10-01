@@ -20,6 +20,12 @@
           {{ size }}
         </option>
       </select>
+
+      <select v-model="lineHeight" @change="applyLineHeight" @mousedown.stop title="行间距">
+        <option v-for="lh in lineHeightOptions" :key="lh" :value="lh">
+          {{ lh === 'normal' ? '标准' : `${lh}x` }}
+        </option>
+      </select>
     </div>
 
     <!-- 文本样式按钮 -->
@@ -114,6 +120,11 @@ const fontFamily = ref<string>('Arial, sans-serif');
 const fontSize = ref<string>('14px');
 const fontSizeOptions = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 72];
 
+// 行间距相关设置
+const lineHeight = ref<string | number>('normal');
+const lineHeightOptions = ['normal', 1.2, 1.5, 1.8, 2.0, 2.5];
+
+
 // 文本样式状态
 const isBold = ref<boolean>(false);
 const isItalic = ref<boolean>(false);
@@ -188,6 +199,7 @@ const CustomTextRenderer = function(
     td.style.textDecoration = 'none';
     td.style.color = textColor.value;
     td.style.backgroundColor = backgroundColor.value;
+    td.style.lineHeight = lineHeight.value.toString();
   } else {
     // 有自定义样式时，只应用已存储的样式，不使用默认值
     if (styles.fontSize !== undefined) td.style.fontSize = styles.fontSize;
@@ -199,6 +211,7 @@ const CustomTextRenderer = function(
     if (styles.verticalAlign !== undefined) td.style.verticalAlign = styles.verticalAlign;
     if (styles.color !== undefined) td.style.color = styles.color;
     if (styles.backgroundColor !== undefined) td.style.backgroundColor = styles.backgroundColor;
+    if (styles.lineHeight !== undefined) td.style.lineHeight = styles.lineHeight;
   }
 };
 
@@ -235,7 +248,7 @@ const applyStyleToSelected = (styleProperty: string, styleValue: string): void =
     }
   }
   
-  console.log('Style applied successfully:', styleProperty, styleValue);
+  // console.log('Style applied successfully:', styleProperty, styleValue);
 };
 
 // 字体设置函数
@@ -247,6 +260,10 @@ const applyFontSize = () => {
   applyStyleToSelected('fontSize', fontSize.value);
 };
 
+// 行间距的函数
+const applyLineHeight = () => {
+  applyStyleToSelected('lineHeight', lineHeight.value.toString());
+};
 // 文本样式函数
 const toggleBold = () => {
   isBold.value = !isBold.value;
@@ -337,6 +354,7 @@ const updateToolbarButtonStates = () => {
     verticalAlign.value = 'middle'; 
     fontFamily.value = 'Arial, sans-serif'; 
     fontSize.value = '14px'; 
+    lineHeight.value = 'normal';
     return;
   }
   
@@ -354,6 +372,7 @@ const updateToolbarButtonStates = () => {
     verticalAlign.value = firstCellStyles.verticalAlign || 'middle';
     fontFamily.value = firstCellStyles.fontFamily || 'Arial, sans-serif';
     fontSize.value = firstCellStyles.fontSize || '14px';
+    lineHeight.value = firstCellStyles.lineHeight || 'normal';
   } else {
     // 没有自定义样式时，重置按钮状态
     isBold.value = false;
@@ -364,6 +383,7 @@ const updateToolbarButtonStates = () => {
     verticalAlign.value = 'middle';
     fontFamily.value = 'Arial, sans-serif';
     fontSize.value = '14px';
+    lineHeight.value = 'normal';
   }
 };
 </script>
