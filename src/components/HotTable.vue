@@ -72,6 +72,8 @@ const hotSettings: Record<string, any> = {
   autoWrapRow: true, // 自动换行
   autoWrapCol: true, // 自动换列
 
+  trimWhitespace: false, // 禁用自动删除空格
+
   // 完全移除这个cells配置，让TableToolbar中的配置生效
 // cells: function(row: number, col: number, prop: string | number) {
 //     return {

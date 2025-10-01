@@ -5,12 +5,12 @@
       <select v-model="fontFamily" @change="applyFontFamily" @mousedown.stop title="字体">
         <option value="Arial, sans-serif">Arial</option>
         <option value="Times New Roman, serif">新罗马</option>
-        <!-- <option value="Courier New, monospace">Courier New</option> -->
-        <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
-        <option value="SimSun, serif">宋体</option>
         <option value="NSimSun, serif">新宋体</option>
-        <option value="KaiTi, serif">楷体</option>
+        <option value="SimSun, serif">宋体</option>
         <option value="FangSong, serif">仿宋</option>
+        <!-- <option value="Courier New, monospace">Courier New</option> -->
+        <option value="Microsoft YaHei, sans-serif">雅黑</option>
+        <option value="KaiTi, serif">楷体</option>
         <option value="Dengxian, sans-serif">等线</option>
         <option value="SimHei, sans-serif">黑体</option>
       </select>
@@ -28,7 +28,7 @@
         class="toolbar-btn" 
         :class="{ active: isBold }" 
         @mousedown.stop="toggleBold"
-        title="粗体 (Ctrl+B)"
+        title="粗体"
       >
         <strong>B</strong>
       </button>
@@ -36,7 +36,7 @@
         class="toolbar-btn" 
         :class="{ active: isItalic }" 
         @mousedown.stop="toggleItalic"
-        title="斜体 (Ctrl+I)"
+        title="斜体"
       >
         <em>I</em>
       </button>
@@ -44,7 +44,7 @@
         class="toolbar-btn" 
         :class="{ active: isUnderline }" 
         @mousedown.stop="toggleUnderline"
-        title="下划线 (Ctrl+U)"
+        title="下划线"
       >
         <u>U</u>
       </button>
@@ -112,7 +112,7 @@ const props = defineProps<TableToolbarProps>();
 // 字体设置
 const fontFamily = ref<string>('Arial, sans-serif');
 const fontSize = ref<string>('14px');
-const fontSizeOptions = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36];
+const fontSizeOptions = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 72];
 
 // 文本样式状态
 const isBold = ref<boolean>(false);
@@ -161,6 +161,8 @@ const CustomTextRenderer = function(
   value: any,
   cellProperties: Handsontable.CellProperties
 ) {
+  // const displayValue = value === null || value === undefined ? '' : String(value);//处理空格
+  // 应用基础文本渲染器
   Handsontable.renderers.TextRenderer.apply(this, [
     instance,
     td,
@@ -175,7 +177,6 @@ const CustomTextRenderer = function(
   const cellKey = getCellKey(row, col);
   const styles = cellStyles[cellKey];
 
-  // 关键修改：只有当单元格没有自定义样式时，才应用默认样式
   if (!styles) {
     // 没有自定义样式时使用默认值
     td.style.verticalAlign = verticalAlign.value;
@@ -311,28 +312,6 @@ onMounted(() => {
       }
     });
     
-       // 初始化所有单元格的默认垂直居中样式到cellStyles对象并更新DOM
-    const rowCount = props.hotInstance.countRows();
-    const colCount = props.hotInstance.countCols();
-    
-    for (let row = 0; row < rowCount; row++) {
-      for (let col = 0; col < colCount; col++) {
-        const cellKey = getCellKey(row, col);
-        
-        if (!cellStyles[cellKey]) {
-          cellStyles[cellKey] = {};
-        }
-        
-        // 设置默认垂直居中样式到cellStyles对象
-        cellStyles[cellKey]['verticalAlign'] = verticalAlign.value;
-        
-        // 同时更新DOM元素的样式
-        const td = props.hotInstance.getCell(row, col) as HTMLTableCellElement;
-        if (td) {
-          td.style.verticalAlign = verticalAlign.value;
-        }
-      }
-    }
      // 添加单元格选择变化监听，用于更新按钮状态
     props.hotInstance.addHook('afterSelection', updateToolbarButtonStates);
     props.hotInstance.addHook('afterSelectionEnd', updateToolbarButtonStates);
@@ -406,11 +385,6 @@ const updateToolbarButtonStates = () => {
   gap: 5px;
 }
 
-.toolbar-section label {
-  font-size: 12px;
-  color: #333;
-}
-
 .toolbar-section select,
 .toolbar-section input[type="color"] {
   padding: 4px 8px;
@@ -450,4 +424,5 @@ const updateToolbarButtonStates = () => {
     justify-content: center;
   }
 }
+
 </style>
