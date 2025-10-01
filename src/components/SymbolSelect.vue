@@ -108,10 +108,4 @@ const insertSymbol = () => {
 .symbol-select:hover {
   border-color: #999;
 }
-
-.symbol-select:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 1px #4a90e2;
-}
 </style>

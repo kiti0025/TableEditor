@@ -101,6 +101,7 @@
       >
     </div>
      <SymbolSelect :hot-instance="hotInstance" />
+     <PredefinedText :hot-instance="hotInstance" />
   </div>
 </template>
 
@@ -108,6 +109,7 @@
 import { ref, onMounted } from 'vue';
 import Handsontable from 'handsontable';
 import SymbolSelect from './SymbolSelect.vue'
+import PredefinedText from './PredefinedText.vue';
 
 // 定义Props接口
 interface TableToolbarProps {
