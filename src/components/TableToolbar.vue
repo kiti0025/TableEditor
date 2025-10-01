@@ -201,17 +201,17 @@ const CustomTextRenderer = function(
     td.style.backgroundColor = backgroundColor.value;
     td.style.lineHeight = lineHeight.value.toString();
   } else {
-    // 有自定义样式时，只应用已存储的样式，不使用默认值
-    if (styles.fontSize !== undefined) td.style.fontSize = styles.fontSize;
-    if (styles.fontFamily !== undefined) td.style.fontFamily = styles.fontFamily;
-    if (styles.fontWeight !== undefined) td.style.fontWeight = styles.fontWeight;
-    if (styles.fontStyle !== undefined) td.style.fontStyle = styles.fontStyle;
-    if (styles.textDecoration !== undefined) td.style.textDecoration = styles.textDecoration;
-    if (styles.textAlign !== undefined) td.style.textAlign = styles.textAlign;
-    if (styles.verticalAlign !== undefined) td.style.verticalAlign = styles.verticalAlign;
-    if (styles.color !== undefined) td.style.color = styles.color;
-    if (styles.backgroundColor !== undefined) td.style.backgroundColor = styles.backgroundColor;
-    if (styles.lineHeight !== undefined) td.style.lineHeight = styles.lineHeight;
+    // 有自定义样式时，应用存储的样式，并为未存储的样式提供默认值，不提供默认值会导致样式丢失，比如垂直居中
+    td.style.verticalAlign = styles.verticalAlign || verticalAlign.value;
+    td.style.textAlign = styles.textAlign || textAlign.value;
+    td.style.fontFamily = styles.fontFamily || fontFamily.value;
+    td.style.fontSize = styles.fontSize || fontSize.value;
+    td.style.fontWeight = styles.fontWeight || 'normal';
+    td.style.fontStyle = styles.fontStyle || 'normal';
+    td.style.textDecoration = styles.textDecoration || 'none';
+    td.style.color = styles.color || textColor.value;
+    td.style.backgroundColor = styles.backgroundColor || backgroundColor.value;
+    td.style.lineHeight = styles.lineHeight || lineHeight.value.toString();
   }
 };
 
