@@ -100,12 +100,14 @@
         title="背景颜色"
       >
     </div>
+     <SymbolSelect :hot-instance="hotInstance" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import Handsontable from 'handsontable';
+import SymbolSelect from './SymbolSelect.vue'
 
 // 定义Props接口
 interface TableToolbarProps {
