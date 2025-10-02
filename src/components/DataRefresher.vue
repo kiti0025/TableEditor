@@ -24,6 +24,7 @@ const props = defineProps<DataRefresherProps>();
 // 定义emits
 const emit = defineEmits<{
   'defect-count-generated': [count: number];
+  'ac-re-values-updated': [{ac1: number, ac25: number, re1: number, re25: number}];
 }>();
 
 // 定义数据变量
@@ -43,8 +44,9 @@ onMounted(() => {
 
 // 从表格中获取送检数量
 const getInspectionCountFromTable = (): number => {
+  const defaultInspectionCount = 2000;
   if (!props.hotInstance) {
-    return 2000; // 返回默认值
+    return defaultInspectionCount; // 返回默认值
   }
   
   try {
@@ -57,24 +59,34 @@ const getInspectionCountFromTable = (): number => {
       for (let row = 0; row < rowCount; row++) {
         for (let col = 0; col < colCount; col++) {
           const cellValue = props.hotInstance.getDataAtCell(row, col);
-          if (cellValue && typeof cellValue === 'string') {
-            if (cellValue.includes('送检数量')) {
-              const match = cellValue.match(/\d+/);
-              if (match) {
-                return parseInt(match[0], 10);
+          if (cellValue) {
+            if (typeof cellValue === 'string') {
+              // 检查带有特殊标记的送检数量
+              if (cellValue.includes('[INSPECTION]')) {
+                const match = cellValue.match(/\[INSPECTION\](\d+)/);
+                if (match) {
+                  return parseInt(match[1], 10);
+                }
               }
+              // 保留原有的检查逻辑
+              if (cellValue.includes('送检数量')) {
+                const match = cellValue.match(/\d+/);
+                if (match) {
+                  return parseInt(match[0], 10);
+                }
+              }
+            } else if (typeof cellValue === 'number' && !isNaN(cellValue)) {
+              return cellValue;
             }
-          } else if (typeof cellValue === 'number' && !isNaN(cellValue)) {
-            return cellValue;
           }
         }
       }
     }
     
-    return 2000; // 默认值
+    return defaultInspectionCount; // 默认值
   } catch (error) {
     console.error('获取送检数量时发生错误:', error);
-    return 2000;
+    return defaultInspectionCount;
   }
 };
 
@@ -87,41 +99,41 @@ const updateSampleAndAcReValues = (count: number) => {
 
   // 根据送检数量设置抽样数量和Ac/Re值
   if (count >= 1201 && count <= 3200) {
-    抽样数量.value = 80;
-    Ac_1.value = 1;
-    Re_1.value = 2;
-    Ac_2_5.value = 3;
-    Re_2_5.value = 4;
-  } else if (count >= 3201 && count <= 10000) {
     抽样数量.value = 125;
-    Ac_1.value = 2;
-    Re_1.value = 3;
-    Ac_2_5.value = 5;
-    Re_2_5.value = 6;
-  } else if (count >= 10001 && count <= 35000) {
-    抽样数量.value = 200;
     Ac_1.value = 3;
     Re_1.value = 4;
-    Ac_2_5.value = 8;
-    Re_2_5.value = 9;
-  } else if (count >= 35001 && count <= 150000) {
-    抽样数量.value = 315;
+    Ac_2_5.value = 7;
+    Re_2_5.value = 8;
+  } else if (count >= 3201 && count <= 10000) {
+    抽样数量.value = 200;
     Ac_1.value = 5;
     Re_1.value = 6;
-    Ac_2_5.value = 13;
-    Re_2_5.value = 14;
-  } else if (count >= 150001 && count <= 500000) {
-    抽样数量.value = 500;
+    Ac_2_5.value = 10;
+    Re_2_5.value = 11;
+  } else if (count >= 10001 && count <= 35000) {
+    抽样数量.value = 315;
     Ac_1.value = 7;
     Re_1.value = 8;
-    Ac_2_5.value = 20;
-    Re_2_5.value = 21;
-  } else if (count > 500000) {
-    抽样数量.value = 800;
+    Ac_2_5.value = 14;
+    Re_2_5.value = 15;
+  } else if (count >= 35001 && count <= 150000) {
+    抽样数量.value = 500;
     Ac_1.value = 10;
     Re_1.value = 11;
-    Ac_2_5.value = 32;
-    Re_2_5.value = 33;
+    Ac_2_5.value = 21;
+    Re_2_5.value = 22;
+  } else if (count >= 150001 && count <= 500000) {
+    抽样数量.value = 800;
+    Ac_1.value = 14;
+    Re_1.value = 15;
+    Ac_2_5.value = 21;
+    Re_2_5.value = 22;
+  } else if (count > 500000) {
+    抽样数量.value = 1250;
+    Ac_1.value = 21;
+    Re_1.value = 22;
+    Ac_2_5.value = 21;
+    Re_2_5.value = 22;
   } else {
     // 默认值，当送检数量小于1201时使用
     抽样数量.value = 50;
@@ -259,40 +271,34 @@ const refreshData = () => {
     
     // 2. 更新抽样数量和Ac/Re值
     updateSampleAndAcReValues(inspectionCount);
+
+    // 发出Ac/Re值更新事件
+    emit('ac-re-values-updated', {
+      ac1: Ac_1.value,
+      ac25: Ac_2_5.value,
+      re1: Re_1.value,
+      re25: Re_2_5.value
+    });
     
-    // 3. 获取表格中已插入的合格数量单元格
+    // 3. 生成随机的缺陷总数
+    const randomDefectCount = generateRandomDefectCount();
+    
+    // 4. 获取表格中已插入的合格数量单元格
     const qualifiedCountCells = getQualifiedCountCells();
     
-    // 4. 获取表格中已插入的缺陷总数
-    const defectCountFromTable = getDefectCountFromTable();
+    // 5. 无论表格中是否有缺陷总数，都使用新生成的随机缺陷总数
+    缺陷总数.value = randomDefectCount;
     
-    // 5. 根据是否有缺陷总数决定如何更新合格数量
+    // 6. 更新表格中的合格数量
     if (qualifiedCountCells.length > 0) {
-      if (defectCountFromTable !== null) {
-        // 如果表格中存在缺陷总数，使用该值来更新合格数量
-        缺陷总数.value = defectCountFromTable;
-        updateQualifiedCountsInTable(defectCountFromTable, qualifiedCountCells);
-        console.log(`已更新合格数量，使其总和等于表格中的缺陷总数 ${defectCountFromTable}`);
-      } else {
-        // 如果表格中没有缺陷总数，将所有合格数量设为0
-        qualifiedCountCells.forEach((cell) => {
-          try {
-            props.hotInstance.setDataAtCell(cell.row, cell.col, '[QUALIFY]0');
-          } catch (error) {
-            console.error('更新合格数量单元格时发生错误:', error);
-          }
-        });
-        props.hotInstance.render();
-        console.log('表格中没有缺陷总数，已将所有合格数量设为0');
-      }
+      updateQualifiedCountsInTable(randomDefectCount, qualifiedCountCells);
+      console.log(`已生成新的随机缺陷总数 ${randomDefectCount} 并更新合格数量`);
     } else {
       console.log('没有找到合格数量单元格');
     }
     
-    // 6. 只有当表格中有缺陷总数时，才发出数据更新事件
-    if (defectCountFromTable !== null) {
-      emit('defect-count-generated', defectCountFromTable);
-    }
+    // 7. 发出数据更新事件
+    emit('defect-count-generated', 缺陷总数.value);
     
     console.log('数据已刷新:', {
       抽样数量: 抽样数量.value,

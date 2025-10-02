@@ -23,7 +23,10 @@
       <option value="当前时间">当前时间</option>
     </select>
   </div>
-  <DataRefresher :hot-instance="hotInstance" @defect-count-generated="handleDefectCountGenerated" />
+  <DataRefresher 
+    :hot-instance="hotInstance" 
+    @defect-count-generated="handleDefectCountGenerated" 
+    @ac-re-values-updated="handleAcReValuesUpdated" />
 </template>
 
 <script setup lang="ts">
@@ -47,7 +50,7 @@ const 产品名称 = ref<string>("xx产品名称xx");
 const 合格状态 = ref<string>("xx合格状态xx");
 const 当前时间 = ref<string>("xx当前时间xx");
 const 交货数量 = ref<number>(0);
-const 送检数量 = ref<number>(0);
+const 送检数量 = ref<number>(31250);
 const 抽样数量 = ref<number>(0);
 const Ac_1 = ref<number>(0);
 const Ac_2_5 = ref<number>(0); 
@@ -101,6 +104,76 @@ const handleDefectCountGenerated = (count: number) => {
   }
 };
 
+// 处理Ac/Re值更新事件
+const handleAcReValuesUpdated = (values: {ac1: number, ac25: number, re1: number, re25: number}) => {
+  console.log('PredefinedText接收到更新的Ac/Re值:', values);
+  
+  // 保存旧值用于查找表格中的单元格
+  const oldAc1 = Ac_1.value;
+  const oldAc25 = Ac_2_5.value;
+  const oldRe1 = Re_1.value;
+  const oldRe2_5 = Re_2_5.value;
+  
+  // 更新新值
+  Ac_1.value = values.ac1;
+  Ac_2_5.value = values.ac25;
+  Re_1.value = values.re1;
+  Re_2_5.value = values.re25;
+  
+  // 如果有表格实例，且值确实发生了变化，更新表格中所有已插入的值
+  if (props.hotInstance) {
+    // 获取表格的行数和列数
+    const rowCount = props.hotInstance.countRows();
+    const colCount = props.hotInstance.countCols();
+    
+    // 遍历表格中的所有单元格
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        try {
+          // 获取单元格当前值
+          const cellValue = props.hotInstance.getDataAtCell(row, col);
+          let needsUpdate = false;
+          let newValue = cellValue ? cellValue.toString() : '';
+          
+          // 检查并更新Ac_1
+          if (oldAc1 !== values.ac1 && newValue.includes(`[AC1]${oldAc1}`)) {
+            newValue = newValue.replace(`[AC1]${oldAc1}`, `[AC1]${values.ac1}`);
+            needsUpdate = true;
+          }
+          
+          // 检查并更新Ac_2.5
+          if (oldAc25 !== values.ac25 && newValue.includes(`[AC25]${oldAc25}`)) {
+            newValue = newValue.replace(`[AC25]${oldAc25}`, `[AC25]${values.ac25}`);
+            needsUpdate = true;
+          }
+          
+          // 检查并更新Re_1
+          if (oldRe1 !== values.re1 && newValue.includes(`[RE1]${oldRe1}`)) {
+            newValue = newValue.replace(`[RE1]${oldRe1}`, `[RE1]${values.re1}`);
+            needsUpdate = true;
+          }
+          
+          // 检查并更新Re_2.5
+          if (oldRe2_5 !== values.re25 && newValue.includes(`[RE25]${oldRe2_5}`)) {
+            newValue = newValue.replace(`[RE25]${oldRe2_5}`, `[RE25]${values.re25}`);
+            needsUpdate = true;
+          }
+          
+          // 如果需要更新，则更新单元格值
+          if (needsUpdate) {
+            props.hotInstance.setDataAtCell(row, col, newValue);
+          }
+        } catch (error) {
+          console.error('更新单元格时发生错误:', error);
+        }
+      }
+    }
+    
+    // 重绘表格以显示更新
+    props.hotInstance.render();
+  }
+};
+
 // 获取选中区域
 const getSelectedRange = (): any => {
   if (!props.hotInstance) return null;
@@ -134,16 +207,45 @@ const insertText = () => {
       
       // 根据选择的类型获取对应的值
       switch(selectedTextType.value) {
-        // ... 其他case保持不变 ...
+        case '工单号':
+          valueToInsert = 工单号.value;
+          break;
+        case '交货数量':
+          valueToInsert = `[DELIVERY]${交货数量.value}`;
+          break;
+        case '送检数量':
+          valueToInsert = `[INSPECTION]${送检数量.value}`;
+          break;
+        case '抽样数量':
+          valueToInsert = `[SAMPLE]${抽样数量.value}`;
+          break;
+        case '产品名称':
+          valueToInsert = 产品名称.value;
+          break;
+        case 'Ac_1':
+          valueToInsert = `[AC1]${Ac_1.value}`;
+          break;
+        case 'Ac_2.5':
+          valueToInsert = `[AC25]${Ac_2_5.value}`;
+          break;
+        case 'Re_1':
+          valueToInsert = `[RE1]${Re_1.value}`;
+          break;
+        case 'Re_2.5':
+          valueToInsert = `[RE25]${Re_2_5.value}`;
+          break;
         case '缺陷总数':
-          // 添加特殊标记，表示这是系统插入的缺陷总数
           valueToInsert = `[DEFECT]${缺陷总数.value}`;
           break;
         case '合格数量':
-          // 添加特殊标记，表示这是系统插入的合格数量
           valueToInsert = `[QUALIFY]${合格数量.value}`;
           break;
-        // ... 其他case保持不变 ...
+        case '合格状态':
+          valueToInsert = 合格状态.value;
+          break;
+        case '当前时间':
+          valueToInsert = 当前时间.value;
+          break;
       }
       
       if (valueToInsert) {
@@ -169,7 +271,8 @@ const insertText = () => {
     }
   } catch (error) {
     console.error('插入值时发生错误:', error);
-  } finally {
+  }
+ finally {
     // 重置选择，以便下次可以重新选择
     selectedTextType.value = '';
   }
