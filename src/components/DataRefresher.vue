@@ -25,6 +25,7 @@ const props = defineProps<DataRefresherProps>();
 const emit = defineEmits<{
   'defect-count-generated': [count: number];
   'ac-re-values-updated': [{ac1: number, ac25: number, re1: number, re25: number}];
+  'refresh-completed': [];
 }>();
 
 // 定义数据变量
@@ -299,6 +300,7 @@ const refreshData = () => {
     
     // 7. 发出数据更新事件
     emit('defect-count-generated', 缺陷总数.value);
+    emit('refresh-completed');
     
     console.log('数据已刷新:', {
       抽样数量: 抽样数量.value,

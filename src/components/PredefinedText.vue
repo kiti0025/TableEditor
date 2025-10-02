@@ -208,7 +208,7 @@ const insertText = () => {
       // 根据选择的类型获取对应的值
       switch(selectedTextType.value) {
         case '工单号':
-          valueToInsert = 工单号.value;
+          valueToInsert = `[WORKORDER]${工单号.value}`;
           break;
         case '交货数量':
           valueToInsert = `[DELIVERY]${交货数量.value}`;
@@ -220,7 +220,7 @@ const insertText = () => {
           valueToInsert = `[SAMPLE]${抽样数量.value}`;
           break;
         case '产品名称':
-          valueToInsert = 产品名称.value;
+          valueToInsert = `[PRODUCT]${产品名称.value}`;
           break;
         case 'Ac_1':
           valueToInsert = `[AC1]${Ac_1.value}`;
@@ -241,10 +241,10 @@ const insertText = () => {
           valueToInsert = `[QUALIFY]${合格数量.value}`;
           break;
         case '合格状态':
-          valueToInsert = 合格状态.value;
+          valueToInsert = `[QUALITY]${合格状态.value}`;
           break;
         case '当前时间':
-          valueToInsert = 当前时间.value;
+          valueToInsert = `[TIME]${当前时间.value}`;
           break;
       }
       

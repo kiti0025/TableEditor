@@ -39,7 +39,8 @@ const createEnhancedRenderer = (baseRenderer) => {
   ) {
     // 1. 先移除特殊标记
     if (typeof value === 'string') {
-      value = value.replace(/\[QUALIFY\]|\[DEFECT\]/g, '');
+      // value = value.replace(/\[QUALIFY\]|\[DEFECT\]/g, '');
+      value = value.replace(/\[[^\]]*\]/g, '');
     }
     
     // 2. 调用原始渲染器处理样式
