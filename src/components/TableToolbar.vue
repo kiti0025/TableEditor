@@ -111,6 +111,7 @@ import Handsontable from 'handsontable';
 import SymbolSelect from './SymbolSelect.vue'
 import PredefinedText from './PredefinedText.vue';
 
+
 // 定义Props接口
 interface TableToolbarProps {
   hotInstance: any;

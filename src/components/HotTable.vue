@@ -26,19 +26,29 @@ import TableToolbar from './TableToolbar.vue';
 registerAllModules()
 registerLanguageDictionary('zh-CN', zhCN)
 
-// // 添加自定义渲染器
-// const CustomTextRenderer = function(
-//   instance: Handsontable,
-//   td: HTMLTableCellElement,
-//   row: number,
-//   col: number,
-//   prop: string | number,
-//   value: any,
-//   cellProperties: Handsontable.CellProperties
-// ) {
-//   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
-//   td.style.verticalAlign = 'middle';
-// };
+// 增强版自定义渲染器 - 移除特殊标记,同时保留通过TableToolbar设置好的样式
+const createEnhancedRenderer = (baseRenderer) => {
+  return function(
+    instance, 
+    td, 
+    row, 
+    col, 
+    prop, 
+    value, 
+    cellProperties
+  ) {
+    // 1. 先移除特殊标记
+    if (typeof value === 'string') {
+      value = value.replace(/\[QUALIFY\]|\[DEFECT\]/g, '');
+    }
+    
+    // 2. 调用原始渲染器处理样式
+    baseRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
+    
+    // 3. 确保基础样式
+    td.style.verticalAlign = 'middle';
+  };
+};
 
 // 4. 组件引用和响应式数据
 const hotTableRef = ref(null)
@@ -75,13 +85,6 @@ const hotSettings: Record<string, any> = {
   autoWrapCol: true, // 自动换列
 
   trimWhitespace: false, // 禁用自动删除空格
-
-  // 完全移除这个cells配置，让TableToolbar中的配置生效
-// cells: function(row: number, col: number, prop: string | number) {
-//     return {
-//       // renderer: CustomTextRenderer // 关键：指定自定义渲染器
-//     };
-//   },
   
   // 交互配置
   selectionMode: 'multiple', // 支持多选
@@ -126,13 +129,31 @@ const hotSettings: Record<string, any> = {
   }
 }
 
-// 6. 组件挂载后处理
+// 组件挂载后处理
 onMounted(() => {
   // 延迟执行以确保组件完全渲染
   setTimeout(() => {
-    verifyAndInitializePlugins()
-  }, 500)
-})
+    verifyAndInitializePlugins();
+    
+    // 等待TableToolbar注册样式渲染器后，增强它
+    if (hotTableRef.value?.hotInstance) {
+      const hotInstance = hotTableRef.value.hotInstance;
+      
+      // 检查当前渲染器
+      const currentRenderer = hotInstance.getCellMeta(0, 0).renderer;
+      
+      // 创建增强版渲染器
+      const enhancedRenderer = createEnhancedRenderer(currentRenderer || Handsontable.renderers.TextRenderer);
+      
+      // 重新注册并应用增强版渲染器
+      hotInstance.updateSettings({
+        cells: function(row, col) {
+          return { renderer: enhancedRenderer };
+        }
+      });
+    }
+  }, 1000); // 1000确保TableToolbar已完成渲染器注册
+});
 
 // 7. 插件验证和初始化函数 - 抽离逻辑提高可维护性
 function verifyAndInitializePlugins(): void {

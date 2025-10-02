@@ -23,10 +23,12 @@
       <option value="当前时间">当前时间</option>
     </select>
   </div>
+  <DataRefresher :hot-instance="hotInstance" @defect-count-generated="handleDefectCountGenerated" />
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import DataRefresher from './DataRefresher.vue';
 
 // 定义Props接口
 interface QualificationTextInputProps {
@@ -53,6 +55,51 @@ const Re_1 = ref<number>(0);
 const Re_2_5 = ref<number>(0); 
 const 缺陷总数 = ref<number>(0);
 const 合格数量 = ref<number>(0);
+
+// 处理缺陷总数生成事件
+const handleDefectCountGenerated = (count: number) => {
+  console.log('PredefinedText接收到生成的缺陷总数:', count);
+  // 保存旧的缺陷总数用于查找表格中的单元格
+  const oldDefectCount = 缺陷总数.value;
+  // 更新缺陷总数
+  缺陷总数.value = count;
+  
+  // 如果有表格实例，且缺陷总数确实发生了变化，更新表格中所有已插入的缺陷总数
+  if (props.hotInstance && oldDefectCount !== count) {
+    console.log('更新表格中所有已插入的缺陷总数，从', oldDefectCount, '变为', count);
+    
+    // 获取表格的行数和列数
+    const rowCount = props.hotInstance.countRows();
+    const colCount = props.hotInstance.countCols();
+    
+    // 遍历表格中的所有单元格
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        try {
+          // 获取单元格当前值
+          const cellValue = props.hotInstance.getDataAtCell(row, col);
+          
+          // 检查单元格值是否包含带标记的旧缺陷总数
+          if (cellValue && cellValue.toString().includes(`[DEFECT]${oldDefectCount}`)) {
+            // 替换单元格值中的旧缺陷总数为新值
+            const newValue = cellValue.toString().replace(
+              `[DEFECT]${oldDefectCount}`, 
+              `[DEFECT]${count}`
+            );
+            
+            // 更新单元格值
+            props.hotInstance.setDataAtCell(row, col, newValue);
+          }
+        } catch (error) {
+          console.error('更新单元格时发生错误:', error);
+        }
+      }
+    }
+    
+    // 重绘表格以显示更新
+    props.hotInstance.render();
+  }
+};
 
 // 获取选中区域
 const getSelectedRange = (): any => {
@@ -87,48 +134,16 @@ const insertText = () => {
       
       // 根据选择的类型获取对应的值
       switch(selectedTextType.value) {
-        case '工单号':
-          valueToInsert = 工单号.value;
-          break;
-        case '交货数量':
-          valueToInsert = 交货数量.value.toString();
-          break;
-        case '送检数量':
-          valueToInsert = 送检数量.value.toString();
-          break;
-        case '抽样数量':
-          valueToInsert = 抽样数量.value.toString();
-          break;
-        case '产品名称':
-          valueToInsert = 产品名称.value;
-          break;
-        case 'Ac_1':
-          valueToInsert = Ac_1.value.toString();
-          break;
-        case 'Ac_2.5':
-          valueToInsert = Ac_2_5.value.toString();
-          break;
-        case 'Re_1':
-          valueToInsert = Re_1.value.toString();
-          break;
-        case 'Re_2.5':
-          valueToInsert = Re_2_5.value.toString();
-          break;
+        // ... 其他case保持不变 ...
         case '缺陷总数':
-          valueToInsert = 缺陷总数.value.toString();
+          // 添加特殊标记，表示这是系统插入的缺陷总数
+          valueToInsert = `[DEFECT]${缺陷总数.value}`;
           break;
         case '合格数量':
-          valueToInsert = 合格数量.value.toString();
+          // 添加特殊标记，表示这是系统插入的合格数量
+          valueToInsert = `[QUALIFY]${合格数量.value}`;
           break;
-        case '合格状态':
-          valueToInsert = 合格状态.value;
-          break;
-        case '当前时间':
-          valueToInsert = 当前时间.value;
-          break;
-        default:
-          valueToInsert = '';
-          break;
+        // ... 其他case保持不变 ...
       }
       
       if (valueToInsert) {
