@@ -25,7 +25,6 @@ const props = defineProps<DataRefresherProps>();
 const emit = defineEmits<{
   'defect-count-generated': [count: number];
   'ac-re-values-updated': [{ac1: number, ac25: number, re1: number, re25: number}];
-  'refresh-completed': [];
 }>();
 
 // 定义数据变量
@@ -67,13 +66,6 @@ const getInspectionCountFromTable = (): number => {
                 const match = cellValue.match(/\[INSPECTION\](\d+)/);
                 if (match) {
                   return parseInt(match[1], 10);
-                }
-              }
-              // 保留原有的检查逻辑
-              if (cellValue.includes('送检数量')) {
-                const match = cellValue.match(/\d+/);
-                if (match) {
-                  return parseInt(match[0], 10);
                 }
               }
             } else if (typeof cellValue === 'number' && !isNaN(cellValue)) {
@@ -172,7 +164,7 @@ const getQualifiedCountCells = (): Array<{row: number, col: number, value: strin
       for (let col = 0; col < colCount; col++) {
         const cellValue = props.hotInstance.getDataAtCell(row, col);
         if (cellValue) {
-          // 只识别带有特殊标记的合格数量单元格
+          // 识别带有特殊标记的合格数量单元格
           if (typeof cellValue === 'string' && cellValue.includes('[QUALIFY]')) {
             qualifiedCountCells.push({row, col, value: cellValue});
           }
@@ -201,7 +193,7 @@ const getDefectCountFromTable = (): number | null => {
       for (let col = 0; col < colCount; col++) {
         const cellValue = props.hotInstance.getDataAtCell(row, col);
         if (cellValue) {
-          // 只识别带有特殊标记的缺陷总数
+          // 识别带有特殊标记的缺陷总数
           if (typeof cellValue === 'string' && cellValue.includes('[DEFECT]')) {
             const match = cellValue.match(/\[DEFECT\](\d+)/);
             if (match) {
@@ -300,7 +292,6 @@ const refreshData = () => {
     
     // 7. 发出数据更新事件
     emit('defect-count-generated', 缺陷总数.value);
-    emit('refresh-completed');
     
     console.log('数据已刷新:', {
       抽样数量: 抽样数量.value,

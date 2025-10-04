@@ -40,7 +40,16 @@ const createEnhancedRenderer = (baseRenderer) => {
     // 1. 先移除特殊标记
     if (typeof value === 'string') {
       // value = value.replace(/\[QUALIFY\]|\[DEFECT\]/g, '');
-      value = value.replace(/\[[^\]]*\]/g, '');
+      const systemIdentifiers = ['WORKORDER', 'INSPECTION', 'SAMPLE', 'PRODUCT', 'AC1', 'AC25', 'RE1', 'RE25', 'DEFECT', 'QUALIFY', 'QUALITY', 'TIME', 'DELIVERY'];
+
+      let displayValue = value;
+
+      systemIdentifiers.forEach(identifier => {
+        const regex = new RegExp(`\\[${identifier}\\]`, 'g');
+        displayValue = displayValue.replace(regex, '');
+      });
+      
+      value = displayValue;
     }
     
     // 2. 调用原始渲染器处理样式

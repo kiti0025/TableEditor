@@ -122,7 +122,7 @@ const props = defineProps<TableToolbarProps>();
 // 字体设置
 const fontFamily = ref<string>('Arial, sans-serif');
 const fontSize = ref<string>('14px');
-const fontSizeOptions = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 72];
+const fontSizeOptions = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 72];
 
 // 行间距相关设置
 const lineHeight = ref<string | number>('normal');
