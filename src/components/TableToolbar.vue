@@ -102,6 +102,7 @@
     </div>
      <SymbolSelect :hot-instance="hotInstance" />
      <PredefinedText :hot-instance="hotInstance" />
+     <TableSaver :hot-instance="hotInstance" :get-cell-styles="getCellStyles" :set-cell-styles="setCellStyles" />
   </div>
 </template>
 
@@ -110,6 +111,7 @@ import { ref, onMounted } from 'vue';
 import Handsontable from 'handsontable';
 import SymbolSelect from './SymbolSelect.vue'
 import PredefinedText from './PredefinedText.vue';
+import TableSaver from './TableSaver.vue';
 
 // 定义Props接口
 interface TableToolbarProps {
@@ -316,6 +318,17 @@ const applyTextColor = () => {
 
 const applyBackgroundColor = () => {
   applyStyleToSelected('backgroundColor', backgroundColor.value);
+};
+
+// TableSaver需要的方法
+const getCellStyles = () => cellStyles;
+const setCellStyles = (styles: Record<string, Record<string, string>>) => {
+  // 先清空所有旧样式
+  Object.keys(cellStyles).forEach(key => {
+    delete cellStyles[key];
+  });
+  // 然后设置新样式
+  Object.assign(cellStyles, styles);
 };
 
 // 组件挂载时设置自定义渲染器

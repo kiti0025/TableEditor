@@ -84,6 +84,7 @@ const createEnhancedRenderer = (baseRenderer) => {
 
 // 4. 组件引用和响应式数据
 const hotTableRef = ref(null)
+const tableToolbarRef = ref(null)
 
 // 生成100行26列的空表格数据
 const spreadsheetData = reactive<Array<Array<string>>>(
