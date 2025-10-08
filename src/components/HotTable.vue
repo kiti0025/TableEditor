@@ -1,6 +1,11 @@
 <template>
-<div>
+  <div class="custom-component">
     <TableToolbar v-if="hotTableRef?.hotInstance" :hot-instance="hotTableRef.hotInstance" />
+    <Preview 
+      v-if="hotTableRef?.hotInstance" 
+      :hot-instance="hotTableRef.hotInstance" 
+      @preview-mode-change="handlePreviewModeChange"
+    />
   </div>
   <div class="spreadsheet-container">
     <HotTable
@@ -21,10 +26,27 @@ import Handsontable from 'handsontable'
 
 // 2. 导入样式
 import 'handsontable/dist/handsontable.full.min.css'
-import TableToolbar from './TableToolbar.vue';
+import TableToolbar from './TableToolbar.vue'
+import Preview from './Preview.vue'
 // 3. 初始化配置
 registerAllModules()
 registerLanguageDictionary('zh-CN', zhCN)
+
+// 预览状态
+const isPreviewMode = ref(false)
+
+// 处理预览状态变化
+const handlePreviewModeChange = (isPreview: boolean) => {
+  isPreviewMode.value = isPreview
+  
+  // 当预览状态改变时，更新表格配置并重新渲染
+  if (hotTableRef.value?.hotInstance) {
+    hotTableRef.value.hotInstance.updateSettings({
+      colHeaders: !isPreview,
+      rowHeaders: !isPreview
+    })
+  }
+}
 
 // 增强版自定义渲染器 - 移除特殊标记,同时保留通过TableToolbar设置好的样式
 const createEnhancedRenderer = (baseRenderer) => {
@@ -84,13 +106,13 @@ const hotSettings: Record<string, any> = {
   // autoColumnSize: true,  // 添加自动列宽调整
   rowHeights: 25,
   colWidths: 100,
-  minCols: 26,
-  minRows: 100,
+  minCols: 1,//最小列数
+  minRows: 1,
   
   // 显示配置
   colHeaders: true, // 显示列标题(A, B, C...)
   rowHeaders: true, // 显示行标题(1, 2, 3...)
-  stretchH: 'all', // 水平拉伸所有列
+  stretchH: 'none', // 水平拉伸所有列 all
   autoWrapRow: true, // 自动换行
   autoWrapCol: true, // 自动换列
 
@@ -205,5 +227,13 @@ function verifyAndInitializePlugins(): void {
   margin: 0;
   padding: 0;
   overflow: hidden;
+}
+.custom-component {
+  display: flex;
+  /* gap: 10px; */
+  align-items: center; 
+  background-color: #f5f5f5;
+  width: fit-content; 
+  padding: 0 5px;
 }
 </style>

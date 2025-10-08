@@ -398,7 +398,6 @@ const updateToolbarButtonStates = () => {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  background-color: #f5f5f5;
   border-bottom: 1px solid #ddd;
   flex-wrap: wrap;
 }
