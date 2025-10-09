@@ -90,7 +90,8 @@ const updateOtherPresetTexts = () => {
   });
 };
 
-// 计算合格状态
+// 计算合格状态（基于缺陷总数和Ac/Re值计算）
+// 注意：对于与合格数量绑定的合格状态，应在updateQualifiedCountsInTable方法中单独处理
 const updateQualityStatus = () => {
   // 如果缺陷总数小于等于Ac_2.5，则合格；否则不合格
   if (缺陷总数.value <= Ac_2_5.value) {
@@ -153,7 +154,7 @@ const refreshAllPresetTextsForPreview = (product?: ProductInfo) => {
   const qualifiedCountCells = getQualifiedCountCells();
   if (qualifiedCountCells.length > 0) {
     updateQualifiedCountsInTable(randomDefectCount, qualifiedCountCells);
-    console.log(`已为预览生成新的随机缺陷总数 ${randomDefectCount} 并更新合格数量`);
+    console.log(`已为预览生成新的随机缺陷总数 ${randomDefectCount} 并更新合格数量及绑定的合格状态`);
   } else {
     console.warn('没有找到合格数量单元格，跳过合格数量更新');
   }
@@ -325,8 +326,11 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
             hasChanges = true;
           }
           if (newValue.includes('[QUALITY]')) {
-            newValue = newValue.replace(/\[QUALITY\][^\[\]\s]*/g, '[QUALITY]');
-            hasChanges = true;
+            // 检查是否已经是具体值（包含中文字符），如果是则不处理
+            if (!newValue.includes('合格')) {
+              newValue = newValue.replace(/\[QUALITY\][^\[\]\s]*/g, '[QUALITY]');
+              hasChanges = true;
+            }
           }
           if (newValue.includes('[TIME]')) {
             newValue = newValue.replace(/\[TIME\][^\[\]\s]*/g, '[TIME]');
@@ -361,6 +365,8 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
           // 因为它们需要保持updateQualifiedCountsInTable方法中分配的具体数值
           // 每个合格数量单元格都应该保持其独立的值
           // 这确保了多个合格数量单元格的值相加等于缺陷总数的业务逻辑
+          // 同样，对于[QUALITY]标记，我们也不进行恢复操作，
+          // 因为它们需要保持与合格数量绑定的具体数值
           
           // 然后替换为当前产品的具体值
           if (newValue.includes('[WORKORDER]')) {
@@ -379,9 +385,16 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
             newValue = newValue.replace(/\[INSPECTION\]/g, `[INSPECTION]${product.totalQuantity}`);
             hasChanges = true;
           }
+          // 注意：对于[QUALITY]标记，我们不进行处理，
+          // 因为它们已经在updateQualifiedCountsInTable方法中被更新为具体数值
+          // 每个合格状态单元格都应该保持其独立的值
+          // 但如果仍然包含原始标记，则使用全局合格状态变量
           if (newValue.includes('[QUALITY]')) {
-            newValue = newValue.replace(/\[QUALITY\]/g, `[QUALITY]${合格状态.value}`);
-            hasChanges = true;
+            // 检查是否仍然是原始标记（不包含中文字符），如果是则替换
+            if (!newValue.includes('合格')) {
+              newValue = newValue.replace(/\[QUALITY\]/g, `[QUALITY]${合格状态.value}`);
+              hasChanges = true;
+            }
           }
           if (newValue.includes('[TIME]')) {
             newValue = newValue.replace(/\[TIME\]/g, `[TIME]${当前时间.value}`);
@@ -591,6 +604,49 @@ const getQualifiedCountCells = (): Array<{row: number, col: number, value: strin
   return qualifiedCountCells;
 };
 
+/**
+ * 查找与指定合格数量单元格绑定的合格状态单元格
+ * 通过检查相邻单元格（上下左右）是否有[QUALITY]标记来实现绑定关系
+ * @param qualifiedCellRow 合格数量单元格的行索引
+ * @param qualifiedCellCol 合格数量单元格的列索引
+ * @returns 绑定的合格状态单元格位置，如果未找到则返回null
+ */
+const findBoundQualityStatusCell = (qualifiedCellRow: number, qualifiedCellCol: number): {row: number, col: number} | null => {
+  if (!props.hotInstance) {
+    return null;
+  }
+  
+  try {
+    const rowCount = props.hotInstance.countRows();
+    const colCount = props.hotInstance.countCols();
+    
+    // 检查当前单元格的相邻单元格（上下左右）
+    const directions = [
+      {row: -1, col: 0},  // 上
+      {row: 1, col: 0},   // 下
+      {row: 0, col: -1},  // 左
+      {row: 0, col: 1}    // 右
+    ];
+    
+    for (const dir of directions) {
+      const checkRow = qualifiedCellRow + dir.row;
+      const checkCol = qualifiedCellCol + dir.col;
+      
+      // 确保检查的单元格在有效范围内
+      if (checkRow >= 0 && checkRow < rowCount && checkCol >= 0 && checkCol < colCount) {
+        const cellValue = props.hotInstance.getDataAtCell(checkRow, checkCol);
+        if (cellValue && typeof cellValue === 'string' && cellValue.includes('[QUALITY]')) {
+          return {row: checkRow, col: checkCol};
+        }
+      }
+    }
+  } catch (error) {
+    console.error('查找绑定的合格状态单元格时发生错误:', error);
+  }
+  
+  return null;
+};
+
 // 从表格中获取已插入的缺陷总数
 const getDefectCountFromTable = (): number | null => {
   if (!props.hotInstance) {
@@ -622,7 +678,11 @@ const getDefectCountFromTable = (): number | null => {
   return null;
 };
 
-// 更新表格中的合格数量
+/**
+ * 更新表格中的合格数量
+ * @param defectCount 缺陷总数
+ * @param qualifiedCountCells 合格数量单元格数组
+ */
 const updateQualifiedCountsInTable = (defectCount: number, qualifiedCountCells: Array<{row: number, col: number, value: string | number}>) => {
   if (qualifiedCountCells.length === 0) {
     console.log('没有合格数量单元格可更新');
@@ -653,12 +713,22 @@ const updateQualifiedCountsInTable = (defectCount: number, qualifiedCountCells: 
     [counts[i], counts[j]] = [counts[j], counts[i]];
   }
   
-  // 更新表格中的合格数量
+  // 更新表格中的合格数量和绑定的合格状态
   qualifiedCountCells.forEach((cell, index) => {
     try {
       // 替换带标记的合格数量为新值
       const newValue = (cell.value as string).replace(/\[QUALIFY\]\d+/, `[QUALIFY]${counts[index]}`);
       props.hotInstance.setDataAtCell(cell.row, cell.col, newValue);
+      
+      // 查找并更新绑定的合格状态单元格
+      const boundQualityCell = findBoundQualityStatusCell(cell.row, cell.col);
+      if (boundQualityCell) {
+        // 根据合格数量确定合格状态：0为合格，非0为不合格
+        const qualityStatus = counts[index] === 0 ? '合格' : '不合格';
+        const qualityValue = `[QUALITY]${qualityStatus}`;
+        props.hotInstance.setDataAtCell(boundQualityCell.row, boundQualityCell.col, qualityValue);
+        console.log(`已更新合格数量单元格(${cell.row},${cell.col})的绑定合格状态为: ${qualityStatus}`);
+      }
     } catch (error) {
       console.error('更新合格数量单元格时发生错误:', error);
     }
@@ -666,6 +736,16 @@ const updateQualifiedCountsInTable = (defectCount: number, qualifiedCountCells: 
   
   // 重绘表格以显示更新
   props.hotInstance.render();
+};
+
+/**
+ * 根据合格数量更新绑定的合格状态
+ * 用于预览时确保合格状态与合格数量保持一致
+ * @param qualifiedCount 合格数量值
+ * @returns 对应的合格状态（0为合格，非0为不合格）
+ */
+const getQualityStatusByQualifiedCount = (qualifiedCount: number): string => {
+  return qualifiedCount === 0 ? '合格' : '不合格';
 };
 
 // 刷新数据的方法
@@ -697,10 +777,10 @@ const refreshData = () => {
     // 5. 无论表格中是否有缺陷总数，都使用新生成的随机缺陷总数
     缺陷总数.value = randomDefectCount;
     
-    // 6. 更新表格中的合格数量
+    // 6. 更新表格中的合格数量和绑定的合格状态
     if (qualifiedCountCells.length > 0) {
       updateQualifiedCountsInTable(randomDefectCount, qualifiedCountCells);
-      console.log(`已生成新的随机缺陷总数 ${randomDefectCount} 并更新合格数量`);
+      console.log(`已生成新的随机缺陷总数 ${randomDefectCount} 并更新合格数量及绑定的合格状态`);
     } else {
       console.log('没有找到合格数量单元格');
     }
