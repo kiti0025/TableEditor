@@ -12,6 +12,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import type { ProductInfo } from '../urlUtils';
 
 // 定义Props接口
 interface DataRefresherProps {
@@ -25,9 +26,23 @@ const props = defineProps<DataRefresherProps>();
 const emit = defineEmits<{
   'defect-count-generated': [count: number];
   'ac-re-values-updated': [{ac1: number, ac25: number, re1: number, re25: number}];
+  'preset-text-updated': [{
+    工单号: string,
+    产品名称: string,
+    交货数量: string,
+    送检数量: string,
+    抽样数量: number,
+    Ac_1: number,
+    Ac_2_5: number,
+    Re_1: number,
+    Re_2_5: number,
+    合格状态: string,
+    当前时间: string
+  }];
 }>();
 
-// 定义数据变量
+// 定义所有预置文本相关的数据变量
+// 基础数据
 const 抽样数量 = ref<number>(0);
 const Ac_1 = ref<number>(0);
 const Ac_2_5 = ref<number>(0);
@@ -36,11 +51,333 @@ const Re_2_5 = ref<number>(0);
 const 缺陷总数 = ref<number>(0);
 const 合格数量 = ref<number>(0);
 
+// URL参数驱动的预置文本数据
+const 工单号 = ref<string>('xx工单号xx');
+const 产品名称 = ref<string>('xx产品名称xx');
+const 交货数量 = ref<string>('xx交货数量xx');
+const 送检数量 = ref<string>('xx送检数量xx'); // 新增：送检数量（等于交货数量）
+
+// 其他预置文本数据（有自己的逻辑）
+const 合格状态 = ref<string>('xx合格状态xx');
+const 当前时间 = ref<string>('xx当前时间xx');
+
 // 组件挂载时初始化数据
 onMounted(() => {
   // 初始化数据，确保组件加载时就有默认数据
   refreshData();
 });
+
+// 更新其他预置文本的逻辑（合格状态、当前时间）
+const updateOtherPresetTexts = () => {
+  // 更新当前时间
+  const now = new Date();
+  const timeString = now.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  当前时间.value = timeString;
+  
+  // 更新合格状态（根据缺陷总数和Ac/Re值计算）
+  updateQualityStatus();
+  
+  console.log('DataRefresher: 其他预置文本更新完成', {
+    合格状态: 合格状态.value,
+    当前时间: 当前时间.value
+  });
+};
+
+// 计算合格状态
+const updateQualityStatus = () => {
+  // 如果缺陷总数小于等于Ac_2.5，则合格；否则不合格
+  if (缺陷总数.value <= Ac_2_5.value) {
+    合格状态.value = '合格';
+  } else {
+    合格状态.value = '不合格';
+  }
+  
+  console.log(`合格状态计算: 缺陷总数=${缺陷总数.value}, Ac_2.5=${Ac_2_5.value}, 结果=${合格状态.value}`);
+};
+
+/**
+ * 更新URL参数驱动的预置文本数据
+ * @param product 产品信息，包含工单号、产品名称、交货数量
+ */
+const updatePresetTextFromUrlParams = (product: ProductInfo) => {
+  console.log('DataRefresher: 更新URL参数驱动的预置文本', product);
+  
+  // 更新URL参数相关的预置文本
+  工单号.value = product.workOrderNumber;
+  产品名称.value = product.productName;
+  交货数量.value = product.totalQuantity;
+  送检数量.value = product.totalQuantity; // 送检数量等于交货数量
+  
+  // 更新其他预置文本（合格状态、当前时间）
+  updateOtherPresetTexts();
+  
+  // 发出预置文本更新事件，通知PredefinedText组件更新
+  emitPresetTextUpdate();
+  
+  console.log('DataRefresher: 预置文本更新完成');
+};
+
+/**
+ * 为预览准备：刷新所有预置文本数据
+ * 这个函数在预览前被调用，确保所有预置文本都是最新的
+ */
+const refreshAllPresetTextsForPreview = () => {
+  console.log('DataRefresher: 开始为预览刷新所有预置文本...');
+  
+  // 1. 先进行基础数据刷新（抽样数量、Ac/Re值、缺陷总数等）
+  const inspectionCount = getInspectionCountFromTable();
+  updateSampleAndAcReValues(inspectionCount);
+  
+  const randomDefectCount = generateRandomDefectCount();
+  缺陷总数.value = randomDefectCount;
+  
+  // 2. 更新其他预置文本（合格状态、当前时间）
+  updateOtherPresetTexts();
+  
+  // 3. 发出全面更新事件
+  emit('ac-re-values-updated', {
+    ac1: Ac_1.value,
+    ac25: Ac_2_5.value,
+    re1: Re_1.value,
+    re25: Re_2_5.value
+  });
+  
+  emit('defect-count-generated', 缺陷总数.value);
+  emitPresetTextUpdate();
+  
+  console.log('DataRefresher: 预览预置文本刷新完成', {
+    抽样数量: 抽样数量.value,
+    Ac_1: Ac_1.value,
+    Ac_2_5: Ac_2_5.value,
+    Re_1: Re_1.value,
+    Re_2_5: Re_2_5.value,
+    缺陷总数: 缺陷总数.value,
+    合格状态: 合格状态.value,
+    当前时间: 当前时间.value
+  });
+};
+
+/**
+ * 在克隆的表格DOM元素上替换预置文本标记为指定产品的值
+ * @param clonedElement 克隆的表格DOM元素
+ * @param product 产品信息
+ */
+const replacePresetTextInClonedTable = (clonedElement: HTMLElement, product: ProductInfo): void => {
+  if (!clonedElement || !product) {
+    console.log('DataRefresher: 无法进行DOM预置文本替换：缺少必要参数');
+    return;
+  }
+  
+  console.log('DataRefresher: 开始在克隆表格中替换预置文本:', product);
+  
+  try {
+    // 获取克隆表格中的所有文本节点
+    const walker = document.createTreeWalker(
+      clonedElement,
+      NodeFilter.SHOW_TEXT
+    );
+    
+    const textNodes: Text[] = [];
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.nodeValue && node.nodeValue.trim()) {
+        textNodes.push(node as Text);
+      }
+    }
+    
+    // 替换每个文本节点中的预置文本标记
+    textNodes.forEach(textNode => {
+      let content = textNode.nodeValue || '';
+      let hasChanges = false;
+      
+      // 替换工单号
+      if (content.includes('[WORKORDER]')) {
+        const regex = /\[WORKORDER\][^\[\]\s]*/g;
+        content = content.replace(regex, `[WORKORDER]${product.workOrderNumber}`);
+        hasChanges = true;
+      }
+      
+      // 替换产品名称
+      if (content.includes('[PRODUCT]')) {
+        const regex = /\[PRODUCT\][^\[\]\s]*/g;
+        content = content.replace(regex, `[PRODUCT]${product.productName}`);
+        hasChanges = true;
+      }
+      
+      // 替换交货数量
+      if (content.includes('[DELIVERY]')) {
+        const regex = /\[DELIVERY\][^\[\]\s]*/g;
+        content = content.replace(regex, `[DELIVERY]${product.totalQuantity}`);
+        hasChanges = true;
+      }
+      
+      // 替换送检数量（等于交货数量）
+      if (content.includes('[INSPECTION]')) {
+        const regex = /\[INSPECTION\][^\[\]\s]*/g;
+        content = content.replace(regex, `[INSPECTION]${product.totalQuantity}`);
+        hasChanges = true;
+      }
+      
+      // 替换合格状态（使用当前的合格状态值）
+      if (content.includes('[QUALITY]')) {
+        const regex = /\[QUALITY\][^\[\]\s]*/g;
+        content = content.replace(regex, `[QUALITY]${合格状态.value}`);
+        hasChanges = true;
+      }
+      
+      // 替换当前时间（使用当前的时间值）
+      if (content.includes('[TIME]')) {
+        const regex = /\[TIME\][^\[\]\s]*/g;
+        content = content.replace(regex, `[TIME]${当前时间.value}`);
+        hasChanges = true;
+      }
+      
+      // 如果有变化，更新文本节点
+      if (hasChanges) {
+        textNode.nodeValue = content;
+        console.log('DataRefresher: 已更新DOM文本节点:', textNode.nodeValue);
+      }
+    });
+    
+    console.log('DataRefresher: 克隆表格预置文本替换完成');
+    
+  } catch (error) {
+    console.error('DataRefresher: DOM预置文本替换过程中发生错误:', error);
+  }
+};
+
+/**
+ * 临时替换表格中的预置文本标记为指定产品的值
+ * @param products 产品信息数组
+ * @param productIndex 当前产品索引（用于多预览）
+ */
+/**
+ * 临时替换表格中的预置文本标记为指定产品的值
+ * @param products 产品信息数组
+ * @param productIndex 当前产品索引（用于多预览）
+ */
+const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex: number = 0): void => {
+  if (!props.hotInstance || !products || products.length === 0) {
+    console.log('DataRefresher: 无法进行预置文本替换：缺少必要参数');
+    return;
+  }
+  
+  const product = products[productIndex];
+  if (!product) {
+    console.log(`DataRefresher: 产品索引${productIndex}超出范围`);
+    return;
+  }
+  
+  console.log(`DataRefresher: 开始替换第${productIndex + 1}个产品的预置文本:`, product);
+  
+  try {
+    const rowCount = props.hotInstance.countRows();
+    const colCount = props.hotInstance.countCols();
+    
+    // 遗历表格中的所有单元格
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        const cellValue = props.hotInstance.getDataAtCell(row, col);
+        
+        if (cellValue && typeof cellValue === 'string') {
+          let newValue = cellValue;
+          let hasChanges = false;
+          
+          // 先恢复所有预置文本标记到原始状态（删除标记后的内容）
+          if (newValue.includes('[WORKORDER]')) {
+            newValue = newValue.replace(/\[WORKORDER\][^\[\]\s]*/g, '[WORKORDER]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[PRODUCT]')) {
+            newValue = newValue.replace(/\[PRODUCT\][^\[\]\s]*/g, '[PRODUCT]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[DELIVERY]')) {
+            newValue = newValue.replace(/\[DELIVERY\][^\[\]\s]*/g, '[DELIVERY]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[INSPECTION]')) {
+            newValue = newValue.replace(/\[INSPECTION\][^\[\]\s]*/g, '[INSPECTION]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[QUALITY]')) {
+            newValue = newValue.replace(/\[QUALITY\][^\[\]\s]*/g, '[QUALITY]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[TIME]')) {
+            newValue = newValue.replace(/\[TIME\][^\[\]\s]*/g, '[TIME]');
+            hasChanges = true;
+          }
+          
+          // 然后替换为当前产品的具体值
+          if (newValue.includes('[WORKORDER]')) {
+            newValue = newValue.replace(/\[WORKORDER\]/g, `[WORKORDER]${product.workOrderNumber}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[PRODUCT]')) {
+            newValue = newValue.replace(/\[PRODUCT\]/g, `[PRODUCT]${product.productName}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[DELIVERY]')) {
+            newValue = newValue.replace(/\[DELIVERY\]/g, `[DELIVERY]${product.totalQuantity}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[INSPECTION]')) {
+            newValue = newValue.replace(/\[INSPECTION\]/g, `[INSPECTION]${product.totalQuantity}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[QUALITY]')) {
+            newValue = newValue.replace(/\[QUALITY\]/g, `[QUALITY]${合格状态.value}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[TIME]')) {
+            newValue = newValue.replace(/\[TIME\]/g, `[TIME]${当前时间.value}`);
+            hasChanges = true;
+          }
+          
+          // 如果有变化，更新单元格
+          if (hasChanges) {
+            props.hotInstance.setDataAtCell(row, col, newValue);
+            console.log(`DataRefresher: 已更新单元格(${row},${col}):`, cellValue, '->', newValue);
+          }
+        }
+      }
+    }
+    
+    // 重新渲染表格
+    props.hotInstance.render();
+    console.log(`DataRefresher: 第${productIndex + 1}个产品的预置文本替换完成`);
+    
+  } catch (error) {
+    console.error('DataRefresher: 预置文本替换过程中发生错误:', error);
+  }
+};
+
+/**
+ * 发出预置文本更新事件
+ */
+const emitPresetTextUpdate = () => {
+  emit('preset-text-updated', {
+    工单号: 工单号.value,
+    产品名称: 产品名称.value,
+    交货数量: 交货数量.value,
+    送检数量: 送检数量.value,
+    抽样数量: 抽样数量.value,
+    Ac_1: Ac_1.value,
+    Ac_2_5: Ac_2_5.value,
+    Re_1: Re_1.value,
+    Re_2_5: Re_2_5.value,
+    合格状态: 合格状态.value,
+    当前时间: 当前时间.value
+  });
+};
 
 // 从表格中获取送检数量
 const getInspectionCountFromTable = (): number => {
@@ -273,6 +610,9 @@ const refreshData = () => {
       re25: Re_2_5.value
     });
     
+    // 发出预置文本更新事件
+    emitPresetTextUpdate();
+    
     // 3. 生成随机的缺陷总数
     const randomDefectCount = generateRandomDefectCount();
     
@@ -293,6 +633,12 @@ const refreshData = () => {
     // 7. 发出数据更新事件
     emit('defect-count-generated', 缺陷总数.value);
     
+    // 8. 更新其他预置文本（合格状态、当前时间）
+    updateOtherPresetTexts();
+    
+    // 9. 最后发出完整的预置文本更新事件
+    emitPresetTextUpdate();
+    
     console.log('数据已刷新:', {
       抽样数量: 抽样数量.value,
       Ac_1: Ac_1.value,
@@ -306,6 +652,37 @@ const refreshData = () => {
     console.error('刷新数据时发生错误:', error);
   }
 };
+
+// 暴露给父组件的接口
+defineExpose({
+  // 基础刷新功能
+  refreshData,
+  
+  // URL参数更新功能
+  updatePresetTextFromUrlParams,
+  temporaryReplacePresetTextInTable,
+  
+  // DOM替换功能（新增）
+  replacePresetTextInClonedTable,
+  
+  // 预览前刷新功能
+  refreshAllPresetTextsForPreview,
+  
+  // 数据访问接口（为了兼容性）
+  get工单号: () => 工单号.value,
+  get产品名称: () => 产品名称.value,
+  get交货数量: () => 交货数量.value,
+  get送检数量: () => 送检数量.value,
+  get抽样数量: () => 抽样数量.value,
+  getAc_1: () => Ac_1.value,
+  getAc_2_5: () => Ac_2_5.value,
+  getRe_1: () => Re_1.value,
+  getRe_2_5: () => Re_2_5.value,
+  get缺陷总数: () => 缺陷总数.value,
+  get合格数量: () => 合格数量.value,
+  get合格状态: () => 合格状态.value,
+  get当前时间: () => 当前时间.value
+});
 </script>
 
 <style scoped>

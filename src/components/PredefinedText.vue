@@ -23,19 +23,15 @@
       <option value="当前时间">当前时间</option>
     </select>
   </div>
-  <DataRefresher 
-    :hot-instance="hotInstance" 
-    @defect-count-generated="handleDefectCountGenerated" 
-    @ac-re-values-updated="handleAcReValuesUpdated" />
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import DataRefresher from './DataRefresher.vue';
 
 // 定义Props接口
 interface QualificationTextInputProps {
   hotInstance: any;
+  dataRefresher?: any; // DataRefresher组件的引用
 }
 
 // 接收hotInstance属性
@@ -174,6 +170,40 @@ const handleAcReValuesUpdated = (values: {ac1: number, ac25: number, re1: number
   }
 };
 
+// 处理预置文本更新事件（来自 DataRefresher）
+const handlePresetTextUpdated = (data: {
+  工单号: string,
+  产品名称: string,
+  交货数量: string,
+  送检数量: string,
+  抽样数量: number,
+  Ac_1: number,
+  Ac_2_5: number,
+  Re_1: number,
+  Re_2_5: number,
+  合格状态: string,
+  当前时间: string
+}) => {
+  console.log('PredefinedText接收到预置文本更新:', data);
+  
+  // 更新本地数据
+  工单号.value = data.工单号;
+  产品名称.value = data.产品名称;
+  交货数量.value = parseInt(data.交货数量) || 0;
+  送检数量.value = parseInt(data.送检数量) || 0;
+  抽样数量.value = data.抽样数量;
+  Ac_1.value = data.Ac_1;
+  Ac_2_5.value = data.Ac_2_5;
+  Re_1.value = data.Re_1;
+  Re_2_5.value = data.Re_2_5;
+  合格状态.value = data.合格状态;
+  当前时间.value = data.当前时间;
+  
+  console.log('PredefinedText预置文本更新完成');
+};
+
+// 暴露给父组件的方法（为了让TableToolbar能够调用）
+
 // 获取选中区域
 const getSelectedRange = (): any => {
   if (!props.hotInstance) return null;
@@ -292,7 +322,11 @@ defineExpose({
   缺陷总数,
   合格数量,
   合格状态,
-  当前时间
+  当前时间,
+  // 事件处理函数，供父组件调用
+  handleDefectCountGenerated,
+  handleAcReValuesUpdated,
+  handlePresetTextUpdated
 });
 </script>
 

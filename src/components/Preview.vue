@@ -6,9 +6,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import type { ProductInfo } from '../urlUtils';
 
 interface PreviewProps {
   hotInstance: any;
+  dataRefresher?: any; // DataRefresher组件的引用
 }
 
 const props = defineProps<PreviewProps>();
@@ -52,6 +54,86 @@ const enterPreview = () => {
     emit('preview-mode-change', false);
   }
 };
+
+// 创建多个预览（在同一页面中垂直排列，只显示表格内容）
+const createMultiPreview = (products: ProductInfo[]) => {
+  if (!props.hotInstance) return;
+  
+  console.log('开始创建多预览，产品数量:', products.length);
+  
+  // 通知父组件进入预览模式
+  emit('preview-mode-change', true);
+  
+  const hotElement = props.hotInstance.rootElement;
+  if (!hotElement) return;
+  
+  try {
+    // 创建一个主预览容器
+    const mainPreviewWrapper = document.createElement('div');
+    mainPreviewWrapper.className = 'preview-container';
+    document.body.appendChild(mainPreviewWrapper);
+    
+    // 在开始创建多预览前，先确保表格处于原始状态
+    if (props.dataRefresher?.refreshAllPresetTextsForPreview) {
+      props.dataRefresher.refreshAllPresetTextsForPreview();
+      console.log('已刷新所有预置文本为预览做准备');
+    }
+    
+    // 为每个产品创建预览区块
+    products.forEach((product, index) => {
+      console.log(`正在为第${index + 1}个产品创建预览:`, product);
+      
+      // 先在原始表格上替换当前产品的预置文本
+      if (props.dataRefresher?.temporaryReplacePresetTextInTable) {
+        props.dataRefresher.temporaryReplacePresetTextInTable(products, index);
+        console.log(`已为第${index + 1}个产品在原始表格上替换预置文本`);
+      }
+      
+      // 立即克隆表格，捕获当前产品的替换结果
+      const tableClone = hotElement.cloneNode(true) as HTMLElement;
+      tableClone.style.width = '100%';
+      tableClone.style.marginBottom = '0';
+      
+      // 创建产品预览区块
+      const productSection = document.createElement('div');
+      productSection.className = 'product-preview-section';
+      productSection.appendChild(tableClone);
+      
+      // 如果不是最后一个产品，添加分页符
+      if (index < products.length - 1) {
+        const pageBreak = document.createElement('div');
+        pageBreak.className = 'page-break';
+        productSection.appendChild(pageBreak);
+      }
+      
+      // 将产品区块添加到主容器
+      mainPreviewWrapper.appendChild(productSection);
+      
+      console.log(`第${index + 1}个预览区块创建完成，产品:`, product.productName);
+    });
+    
+    // 添加点击预览容器退出预览的功能
+    mainPreviewWrapper.addEventListener('click', function handlePreviewClick(event) {
+      if (event.target === mainPreviewWrapper) {
+        // 通知父组件退出预览模式
+        emit('preview-mode-change', false);
+        mainPreviewWrapper.remove();
+        mainPreviewWrapper.removeEventListener('click', handlePreviewClick);
+      }
+    });
+    
+  } catch (error) {
+    console.error('创建多预览时发生错误:', error);
+    // 发生错误时确保状态正确
+    emit('preview-mode-change', false);
+  }
+};
+
+// 暴露给父组件
+defineExpose({
+  enterPreview,
+  createMultiPreview
+});
 </script>
 
 <style scoped>
@@ -80,5 +162,45 @@ const enterPreview = () => {
   z-index: 1000;
   padding: 20px;
   overflow: auto;
+}
+
+:global(.product-preview-section) {
+  margin-bottom: 30px;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 20px;
+}
+
+:global(.product-preview-section:last-child) {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+:global(.page-break) {
+  page-break-after: always;
+  height: 1px;
+  margin: 20px 0;
+  border-top: 1px dashed #ccc;
+}
+
+/* 打印样式优化 */
+@media print {
+  :global(.preview-container) {
+    position: static;
+    padding: 0;
+    background: white;
+  }
+  
+  :global(.product-preview-section) {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  :global(.page-break) {
+    page-break-after: always;
+    height: 0;
+    margin: 0;
+    border: none;
+  }
 }
 </style>

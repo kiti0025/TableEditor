@@ -1,9 +1,11 @@
 <template>
   <div class="custom-component">
-    <TableToolbar v-if="hotTableRef?.hotInstance" :hot-instance="hotTableRef.hotInstance" />
+    <TableToolbar ref="tableToolbarRef" v-if="hotTableRef?.hotInstance" :hot-instance="hotTableRef.hotInstance" />
     <Preview 
+      ref="previewRef"
       v-if="hotTableRef?.hotInstance" 
       :hot-instance="hotTableRef.hotInstance" 
+      :data-refresher="tableToolbarRef?.getDataRefresher()"
       @preview-mode-change="handlePreviewModeChange"
     />
   </div>
@@ -28,6 +30,7 @@ import Handsontable from 'handsontable'
 import 'handsontable/dist/handsontable.full.min.css'
 import TableToolbar from './TableToolbar.vue'
 import Preview from './Preview.vue'
+import { autoLoadAndMultiPreview, autoLoadAndPreview, type ProductInfo } from '../urlUtils'
 // 3. 初始化配置
 registerAllModules()
 registerLanguageDictionary('zh-CN', zhCN)
@@ -85,6 +88,7 @@ const createEnhancedRenderer = (baseRenderer) => {
 // 4. 组件引用和响应式数据
 const hotTableRef = ref(null)
 const tableToolbarRef = ref(null)
+const previewRef = ref(null)
 
 // 生成100行26列的空表格数据
 const spreadsheetData = reactive<Array<Array<string>>>(
@@ -184,8 +188,11 @@ onMounted(() => {
           return { renderer: enhancedRenderer };
         }
       });
+      
+      // 尝试从URL自动加载表格并预览
+      handleAutoLoadFromUrl();
     }
-  }, 1000); // 1000确保TableToolbar已完成渲染器注册
+  }, 1000); // 减少到1000ms
 });
 
 // 7. 插件验证和初始化函数 - 抽离逻辑提高可维护性
@@ -219,6 +226,72 @@ function verifyAndInitializePlugins(): void {
     console.error('插件验证过程中发生错误:', error)
   }
 }
+
+// 处理URL自动加载
+async function handleAutoLoadFromUrl(): Promise<void> {
+  try {
+    console.log('开始处理URL自动加载...');
+    
+    // 等待组件初始化完成
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const loadFunction = async (filename: string) => {
+      console.log('开始加载文件:', filename);
+      
+      if (!tableToolbarRef.value?.loadTableFromFile) {
+        console.error('tableToolbarRef.value.loadTableFromFile 不可用');
+        return;
+      }
+      
+      await tableToolbarRef.value.loadTableFromFile(filename);
+      console.log('文件加载完成');
+    };
+    
+    // 多预览函数
+    const createMultiPreviewFunction = (products: ProductInfo[]) => {
+      console.log('开始创建多预览，产品数量:', products.length);
+      
+      if (!previewRef.value?.createMultiPreview) {
+        console.error('previewRef.value.createMultiPreview 不可用');
+        return;
+      }
+      
+      previewRef.value.createMultiPreview(products);
+      console.log('多预览创建完成');
+    };
+    
+    // 单预览函数（作为备用）
+    const previewFunction = () => {
+      console.log('开始触发单预览...');
+      
+      if (!previewRef.value?.enterPreview) {
+        console.error('previewRef.value.enterPreview 不可用');
+        return;
+      }
+      
+      previewRef.value.enterPreview();
+      console.log('单预览触发完成');
+    };
+    
+    // 尝试使用多预览模式，传递dataRefresher用于预置文本更新
+    const dataRefresher = tableToolbarRef.value?.getDataRefresher();
+    let success = await autoLoadAndMultiPreview(loadFunction, createMultiPreviewFunction, dataRefresher);
+    
+    // 如果多预览失败，则回退到单预览模式
+    if (!success) {
+      console.log('多预览模式失败，尝试单预览模式...');
+      success = await autoLoadAndPreview(loadFunction, previewFunction);
+    }
+    
+    if (success) {
+      console.log('URL自动加载和预览成功');
+    } else {
+      console.log('URL中没有找到合适的参数，跳过自动加载');
+    }
+  } catch (error) {
+    console.error('URL自动加载失败:', error);
+  }
+}
 </script>
 
 <style scoped>
@@ -231,7 +304,7 @@ function verifyAndInitializePlugins(): void {
 }
 .custom-component {
   display: flex;
-  /* gap: 10px; */
+  gap: 5px;
   align-items: center; 
   background-color: #f5f5f5;
   width: fit-content; 

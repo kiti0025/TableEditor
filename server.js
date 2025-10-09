@@ -48,7 +48,7 @@ app.get('/api/load-table', (req, res) => {
 })
 
 // 获取文件列表
-app.get('/api/file-list', (req, res) => {
+app.get('/api/load-file-list', (req, res) => {
   try {
     const files = fs.readdirSync(saveDir).filter(file => file.endsWith('.json'))
     res.json({ success: true, files })

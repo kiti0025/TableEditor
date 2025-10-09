@@ -1,7 +1,7 @@
 <template>
   <div class="table-saver">
-    <button @click="showSaveDialog = true" class="btn save-btn" title="保存当前模板">保存</button>
-    <button @click="showList = !showList" class="btn list-btn" title="显示已保存模板列表">列表</button>
+    <button @click="showSaveDialog = true" class="toolbar-btn" title="保存当前文件">保存</button>
+    <button @click="showList = !showList" class="toolbar-btn" title="显示已保存文件列表">列表</button>
     
     <!-- 保存对话框 -->
     <div v-if="showSaveDialog" class="modal" @click.self="showSaveDialog = false">
@@ -15,8 +15,8 @@
           @keyup.enter="saveTable"
         >
         <div class="modal-buttons">
-          <button @click="saveTable" class="btn save-btn" :disabled="!fileName.trim()">确定</button>
-          <button @click="showSaveDialog = false" class="btn">取消</button>
+          <button @click="saveTable" class="toolbar-btn" :disabled="!fileName.trim()">确定</button>
+          <button @click="showSaveDialog = false" class="toolbar-btn">取消</button>
         </div>
       </div>
     </div>
@@ -24,18 +24,18 @@
     <!-- 文件列表对话框 -->
     <div v-if="showList" class="modal" @click.self="showList = false">
       <div class="modal-content">
-        <h3>已保存的模板</h3>
-        <div v-if="!fileList.length" class="no-files">暂无模板</div>
+        <h3>已保存的文件</h3>
+        <div v-if="!fileList.length" class="no-files">暂无文件</div>
         <div v-else>
           <div v-for="file in fileList" :key="file" class="file-item">
             <span>{{ file.replace('.json', '') }}</span>
             <div class="file-actions">
-              <button @click="loadTable(file)" class="btn load-btn">加载</button>
-              <button @click="deleteFile(file)" class="btn delete-btn">删除</button>
+              <button @click="loadTable(file)" class="toolbar-btn">加载</button>
+              <button @click="deleteFile(file)" class="toolbar-btn">删除</button>
             </div>
           </div>
         </div>
-        <button @click="showList = false" class="btn close-btn">关闭</button>
+        <button @click="showList = false" class="toolbar-btn close-btn">关闭</button>
       </div>
     </div>
   </div>
@@ -134,16 +134,16 @@ const loadTable = async (filename) => {
 
 const loadFileList = async () => {
   try {
-    const response = await fetch('/api/file-list')
-    const { files } = await response.json()
-    fileList.value = files || []
+    const response = await fetch('/api/load-file-list');
+    const { files } = await response.json();
+    fileList.value = files || [];
   } catch (error) {
-    console.error('获取文件列表失败:', error)
+    console.error('获取文件列表失败:', error);
   }
-}
+};
 
 const deleteFile = async (filename) => {
-  if (!confirm(`确定要删除模板 "${filename.replace('.json', '')}" 吗？`)) {
+  if (!confirm(`确定要删除文件 "${filename.replace('.json', '')}" 吗？`)) {
     return
   }
   
@@ -164,6 +164,11 @@ const deleteFile = async (filename) => {
 }
 
 onMounted(loadFileList)
+
+// 暴露方法给父组件
+defineExpose({
+  loadTable
+})
 </script>
 
 <style scoped>
@@ -172,22 +177,32 @@ onMounted(loadFileList)
   gap: 5px;
 }
 
-.btn {
-  padding: 4px 12px;
-  border: 1px solid #ccc;
+.toolbar-btn {
+  padding: 4px 12px; 
+  background-color: white;
+  border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  background: white;
+  transition: background-color 0.2s;
 }
 
-.btn:hover { border-color: #999; }
-.btn:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; }
-/* .save-btn { background: #4CAF50; color: white; border-color: #4CAF50; }
-.list-btn { background: #2196F3; color: white; border-color: #2196F3; } */
-.load-btn { background: #4CAF50; color: white; border-color: #4CAF50; }
-.delete-btn { background: #f44336; color: white; border-color: #f44336; }
-.close-btn { background: #f44336; color: white; border-color: #f44336; margin-top: 10px; }
+.toolbar-btn:hover {
+  background-color: #e6e6e6;
+}
+
+.toolbar-btn:disabled {
+  background: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* 为主要操作按钮添加激活状态样式 */
+.toolbar-btn.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #4a90e2;
+}
 
 .file-actions {
   display: flex;
@@ -199,24 +214,16 @@ onMounted(loadFileList)
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 14px;
-  margin: 10px 0;
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .modal {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -228,21 +235,34 @@ onMounted(loadFileList)
   padding: 20px;
   border-radius: 4px;
   min-width: 300px;
-  max-height: 400px;
+  max-width: 500px;
+  max-height: 80vh;
   overflow-y: auto;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .file-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 8px;
   border-bottom: 1px solid #eee;
 }
 
 .no-files {
   text-align: center;
-  color: #666;
-  padding: 20px 0;
+  color: #999;
+  padding: 20px;
+}
+
+.close-btn {
+  margin-top: 10px;
+  width: 100%;
 }
 </style>

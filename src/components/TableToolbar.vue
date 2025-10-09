@@ -101,8 +101,18 @@
       >
     </div>
      <SymbolSelect :hot-instance="hotInstance" />
-     <PredefinedText :hot-instance="hotInstance" />
-     <TableSaver :hot-instance="hotInstance" :get-cell-styles="getCellStyles" :set-cell-styles="setCellStyles" />
+     <PredefinedText 
+       ref="predefinedTextRef" 
+       :hot-instance="hotInstance"
+     />
+     <DataRefresher 
+       ref="dataRefresherRef"
+       :hot-instance="hotInstance" 
+       @defect-count-generated="handleDefectCountGenerated" 
+       @ac-re-values-updated="handleAcReValuesUpdated"
+       @preset-text-updated="handlePresetTextUpdated"
+     />
+     <TableSaver ref="tableSaverRef" :hot-instance="hotInstance" :get-cell-styles="getCellStyles" :set-cell-styles="setCellStyles" />
   </div>
 </template>
 
@@ -111,6 +121,7 @@ import { ref, onMounted } from 'vue';
 import Handsontable from 'handsontable';
 import SymbolSelect from './SymbolSelect.vue'
 import PredefinedText from './PredefinedText.vue';
+import DataRefresher from './DataRefresher.vue';
 import TableSaver from './TableSaver.vue';
 
 // 定义Props接口
@@ -120,6 +131,11 @@ interface TableToolbarProps {
 
 // 接收hotInstance属性
 const props = defineProps<TableToolbarProps>();
+
+// 组件引用
+const tableSaverRef = ref(null);
+const predefinedTextRef = ref(null);
+const dataRefresherRef = ref(null); // DataRefresher组件引用
 
 // 字体设置
 const fontFamily = ref<string>('Arial, sans-serif');
@@ -330,6 +346,56 @@ const setCellStyles = (styles: Record<string, Record<string, string>>) => {
   // 然后设置新样式
   Object.assign(cellStyles, styles);
 };
+
+// 暴露loadTable方法给父组件
+const loadTableFromFile = async (filename: string) => {
+  console.log('TableToolbar.loadTableFromFile 被调用，文件名:', filename);
+  console.log('tableSaverRef.value:', tableSaverRef.value);
+  
+  if (!tableSaverRef.value) {
+    console.error('tableSaverRef.value 为 null');
+    return;
+  }
+  
+  if (!tableSaverRef.value.loadTable) {
+    console.error('tableSaverRef.value.loadTable 不存在');
+    return;
+  }
+  
+  await tableSaverRef.value.loadTable(filename);
+  console.log('TableSaver.loadTable 执行完成');
+};
+
+// DataRefresher事件处理函数
+const handleDefectCountGenerated = (count: number) => {
+  console.log('TableToolbar: 接收到缺陷总数生成事件:', count);
+  // 转发给PredefinedText
+  if (predefinedTextRef.value?.handleDefectCountGenerated) {
+    predefinedTextRef.value.handleDefectCountGenerated(count);
+  }
+};
+
+const handleAcReValuesUpdated = (values: {ac1: number, ac25: number, re1: number, re25: number}) => {
+  console.log('TableToolbar: 接收到Ac/Re值更新事件:', values);
+  // 转发给PredefinedText
+  if (predefinedTextRef.value?.handleAcReValuesUpdated) {
+    predefinedTextRef.value.handleAcReValuesUpdated(values);
+  }
+};
+
+const handlePresetTextUpdated = (data: any) => {
+  console.log('TableToolbar: 接收到预置文本更新事件:', data);
+  // 转发给PredefinedText
+  if (predefinedTextRef.value?.handlePresetTextUpdated) {
+    predefinedTextRef.value.handlePresetTextUpdated(data);
+  }
+};
+
+// 暴露给父组件
+defineExpose({
+  loadTableFromFile,
+  getDataRefresher: () => dataRefresherRef.value // DataRefresher引用
+});
 
 // 组件挂载时设置自定义渲染器
 onMounted(() => {
