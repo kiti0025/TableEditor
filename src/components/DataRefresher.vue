@@ -127,21 +127,41 @@ const updatePresetTextFromUrlParams = (product: ProductInfo) => {
 /**
  * 为预览准备：刷新所有预置文本数据
  * 这个函数在预览前被调用，确保所有预置文本都是最新的
+ * @param product 产品信息，用于获取送检数量
  */
-const refreshAllPresetTextsForPreview = () => {
-  console.log('DataRefresher: 开始为预览刷新所有预置文本...');
+const refreshAllPresetTextsForPreview = (product?: ProductInfo) => {
+  console.log('DataRefresher: 开始为预览刷新所有预置文本...', product);
   
-  // 1. 先进行基础数据刷新（抽样数量、Ac/Re值、缺陷总数等）
-  const inspectionCount = getInspectionCountFromTable();
+  // 1. 获取送检数量：优先使用URL参数，其次从表格获取
+  let inspectionCount: number;
+  if (product?.totalQuantity) {
+    inspectionCount = parseInt(product.totalQuantity, 10);
+    console.log(`使用URL参数中的送检数量: ${inspectionCount}`);
+  } else {
+    inspectionCount = getInspectionCountFromTable();
+    console.log(`使用表格中的送检数量: ${inspectionCount}`);
+  }
+  
+  // 2. 根据送检数量更新抽样数量和Ac/Re值
   updateSampleAndAcReValues(inspectionCount);
   
+  // 3. 生成新的随机缺陷总数
   const randomDefectCount = generateRandomDefectCount();
   缺陷总数.value = randomDefectCount;
   
-  // 2. 更新其他预置文本（合格状态、当前时间）
+  // 4. 获取表格中已插入的合格数量单元格并更新
+  const qualifiedCountCells = getQualifiedCountCells();
+  if (qualifiedCountCells.length > 0) {
+    updateQualifiedCountsInTable(randomDefectCount, qualifiedCountCells);
+    console.log(`已为预览生成新的随机缺陷总数 ${randomDefectCount} 并更新合格数量`);
+  } else {
+    console.warn('没有找到合格数量单元格，跳过合格数量更新');
+  }
+  
+  // 5. 更新其他预置文本（合格状态、当前时间）
   updateOtherPresetTexts();
   
-  // 3. 发出全面更新事件
+  // 6. 发出全面更新事件
   emit('ac-re-values-updated', {
     ac1: Ac_1.value,
     ac25: Ac_2_5.value,
@@ -153,6 +173,7 @@ const refreshAllPresetTextsForPreview = () => {
   emitPresetTextUpdate();
   
   console.log('DataRefresher: 预览预置文本刷新完成', {
+    送检数量: inspectionCount,
     抽样数量: 抽样数量.value,
     Ac_1: Ac_1.value,
     Ac_2_5: Ac_2_5.value,
@@ -258,11 +279,6 @@ const replacePresetTextInClonedTable = (clonedElement: HTMLElement, product: Pro
  * @param products 产品信息数组
  * @param productIndex 当前产品索引（用于多预览）
  */
-/**
- * 临时替换表格中的预置文本标记为指定产品的值
- * @param products 产品信息数组
- * @param productIndex 当前产品索引（用于多预览）
- */
 const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex: number = 0): void => {
   if (!props.hotInstance || !products || products.length === 0) {
     console.log('DataRefresher: 无法进行预置文本替换：缺少必要参数');
@@ -291,6 +307,7 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
           let hasChanges = false;
           
           // 先恢复所有预置文本标记到原始状态（删除标记后的内容）
+          // 这样可以确保每次预览时都从原始标记开始替换，避免累积替换
           if (newValue.includes('[WORKORDER]')) {
             newValue = newValue.replace(/\[WORKORDER\][^\[\]\s]*/g, '[WORKORDER]');
             hasChanges = true;
@@ -315,6 +332,35 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
             newValue = newValue.replace(/\[TIME\][^\[\]\s]*/g, '[TIME]');
             hasChanges = true;
           }
+          // 添加抽样数量和Ac/Re值的恢复
+          if (newValue.includes('[SAMPLE]')) {
+            newValue = newValue.replace(/\[SAMPLE\][^\[\]\s]*/g, '[SAMPLE]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[AC1]')) {
+            newValue = newValue.replace(/\[AC1\][^\[\]\s]*/g, '[AC1]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[AC25]')) {
+            newValue = newValue.replace(/\[AC25\][^\[\]\s]*/g, '[AC25]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[RE1]')) {
+            newValue = newValue.replace(/\[RE1\][^\[\]\s]*/g, '[RE1]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[RE25]')) {
+            newValue = newValue.replace(/\[RE25\][^\[\]\s]*/g, '[RE25]');
+            hasChanges = true;
+          }
+          if (newValue.includes('[DEFECT]')) {
+            newValue = newValue.replace(/\[DEFECT\][^\[\]\s]*/g, '[DEFECT]');
+            hasChanges = true;
+          }
+          // 注意：对于[QUALIFY]标记，我们不进行恢复操作，
+          // 因为它们需要保持updateQualifiedCountsInTable方法中分配的具体数值
+          // 每个合格数量单元格都应该保持其独立的值
+          // 这确保了多个合格数量单元格的值相加等于缺陷总数的业务逻辑
           
           // 然后替换为当前产品的具体值
           if (newValue.includes('[WORKORDER]')) {
@@ -341,6 +387,35 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
             newValue = newValue.replace(/\[TIME\]/g, `[TIME]${当前时间.value}`);
             hasChanges = true;
           }
+          // 添加抽样数量和Ac/Re值的替换
+          if (newValue.includes('[SAMPLE]')) {
+            newValue = newValue.replace(/\[SAMPLE\]/g, `[SAMPLE]${抽样数量.value}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[AC1]')) {
+            newValue = newValue.replace(/\[AC1\]/g, `[AC1]${Ac_1.value}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[AC25]')) {
+            newValue = newValue.replace(/\[AC25\]/g, `[AC25]${Ac_2_5.value}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[RE1]')) {
+            newValue = newValue.replace(/\[RE1\]/g, `[RE1]${Re_1.value}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[RE25]')) {
+            newValue = newValue.replace(/\[RE25\]/g, `[RE25]${Re_2_5.value}`);
+            hasChanges = true;
+          }
+          if (newValue.includes('[DEFECT]')) {
+            newValue = newValue.replace(/\[DEFECT\]/g, `[DEFECT]${缺陷总数.value}`);
+            hasChanges = true;
+          }
+          // 注意：对于[QUALIFY]标记，我们不进行全局替换，
+          // 而是保持updateQualifiedCountsInTable方法中分配的具体数值
+          // 这样每个合格数量单元格都能保持其独立的值
+          // 确保多个合格数量单元格的值相加等于缺陷总数
           
           // 如果有变化，更新单元格
           if (hasChanges) {

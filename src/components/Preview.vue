@@ -73,17 +73,19 @@ const createMultiPreview = (products: ProductInfo[]) => {
     mainPreviewWrapper.className = 'preview-container';
     document.body.appendChild(mainPreviewWrapper);
     
-    // 在开始创建多预览前，先确保表格处于原始状态
-    if (props.dataRefresher?.refreshAllPresetTextsForPreview) {
-      props.dataRefresher.refreshAllPresetTextsForPreview();
-      console.log('已刷新所有预置文本为预览做准备');
-    }
-    
     // 为每个产品创建预览区块
     products.forEach((product, index) => {
       console.log(`正在为第${index + 1}个产品创建预览:`, product);
       
-      // 先在原始表格上替换当前产品的预置文本
+      // 为每个产品单独刷新所有预置文本数据（包括随机数据）
+      // 这确保每组预览都有独立的缺陷总数、合格数量等随机生成的数据
+      if (props.dataRefresher?.refreshAllPresetTextsForPreview) {
+        props.dataRefresher.refreshAllPresetTextsForPreview(product);
+        console.log(`已为第${index + 1}个产品刷新所有预置文本数据`);
+      }
+      
+      // 然后为当前产品替换URL参数相关的预置文本
+      // 这确保每组预览显示对应产品的工单号、产品名称等URL参数数据
       if (props.dataRefresher?.temporaryReplacePresetTextInTable) {
         props.dataRefresher.temporaryReplacePresetTextInTable(products, index);
         console.log(`已为第${index + 1}个产品在原始表格上替换预置文本`);
