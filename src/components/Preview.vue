@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { ProductInfo } from '../urlUtils';
+import { parseProductInfo } from '../urlUtils'; // 导入解析URL参数的函数
 
 interface PreviewProps {
   hotInstance: any;
@@ -17,6 +18,12 @@ const props = defineProps<PreviewProps>();
 const emit = defineEmits<{
   'preview-mode-change': [boolean]
 }>();
+
+// 检查URL是否携带参数
+const hasUrlParams = () => {
+  const products = parseProductInfo();
+  return products.length > 0;
+};
 
 // 进入预览模式
 const enterPreview = () => {
@@ -38,15 +45,18 @@ const enterPreview = () => {
     const tableClone = hotElement.cloneNode(true) as HTMLElement;
     previewWrapper.appendChild(tableClone);
     
-    // 添加点击预览容器退出预览的功能
-    previewWrapper.addEventListener('click', function handlePreviewClick(event) {
-      if (event.target === previewWrapper) {
-        // 通知父组件退出预览模式
-        emit('preview-mode-change', false);
-        previewWrapper.remove();
-        previewWrapper.removeEventListener('click', handlePreviewClick);
-      }
-    });
+    // 只有在URL不携带参数时才添加点击预览容器退出预览的功能
+    if (!hasUrlParams()) {
+      // 添加点击预览容器退出预览的功能
+      previewWrapper.addEventListener('click', function handlePreviewClick(event) {
+        if (event.target === previewWrapper) {
+          // 通知父组件退出预览模式
+          emit('preview-mode-change', false);
+          previewWrapper.remove();
+          previewWrapper.removeEventListener('click', handlePreviewClick);
+        }
+      });
+    }
     
   } catch (error) {
     console.error('进入预览模式时发生错误:', error);
@@ -65,7 +75,9 @@ const createMultiPreview = (products: ProductInfo[]) => {
   emit('preview-mode-change', true);
   
   const hotElement = props.hotInstance.rootElement;
-  if (!hotElement) return;
+  if (!hotElement) {
+    return;
+  }
   
   try {
     // 创建一个主预览容器
@@ -114,15 +126,9 @@ const createMultiPreview = (products: ProductInfo[]) => {
       console.log(`第${index + 1}个预览区块创建完成，产品:`, product.productName);
     });
     
-    // 添加点击预览容器退出预览的功能
-    mainPreviewWrapper.addEventListener('click', function handlePreviewClick(event) {
-      if (event.target === mainPreviewWrapper) {
-        // 通知父组件退出预览模式
-        emit('preview-mode-change', false);
-        mainPreviewWrapper.remove();
-        mainPreviewWrapper.removeEventListener('click', handlePreviewClick);
-      }
-    });
+    // 只有在URL不携带参数时才添加点击预览容器退出预览的功能
+    // 注意：对于多预览，即使URL携带参数，我们也不添加退出功能，因为这是自动加载的场景
+    // 但如果需要，可以添加一个"返回"按钮而不是点击空白处退出
     
   } catch (error) {
     console.error('创建多预览时发生错误:', error);
@@ -154,6 +160,7 @@ defineExpose({
   border-color: #999;
 }
 
+/* 全局样式保持不变 */
 :global(.preview-container) {
   position: fixed;
   top: 0;

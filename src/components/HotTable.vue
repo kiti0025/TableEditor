@@ -16,6 +16,8 @@
       :settings="hotSettings"
     />
   </div>
+  <!-- 使用LoadingIndicator组件 -->
+  <LoadingIndicator :is-loading="isGlobalLoading" fullscreen />
 </template>
 
 <script setup lang="ts">
@@ -30,13 +32,17 @@ import Handsontable from 'handsontable'
 import 'handsontable/dist/handsontable.full.min.css'
 import TableToolbar from './TableToolbar.vue'
 import Preview from './Preview.vue'
+import LoadingIndicator from './LoadingIndicator.vue'
 import { autoLoadAndMultiPreview, autoLoadAndPreview, type ProductInfo } from '../urlUtils'
+
 // 3. 初始化配置
 registerAllModules()
 registerLanguageDictionary('zh-CN', zhCN)
 
 // 预览状态
 const isPreviewMode = ref(false)
+// 全局加载状态，初始设置为true，表示应用正在加载中
+const isGlobalLoading = ref(true)
 
 // 处理预览状态变化
 const handlePreviewModeChange = (isPreview: boolean) => {
@@ -48,6 +54,11 @@ const handlePreviewModeChange = (isPreview: boolean) => {
       colHeaders: !isPreview,
       rowHeaders: !isPreview
     })
+  }
+  
+  // 当退出预览模式时，关闭全局加载状态
+  if (!isPreview) {
+    isGlobalLoading.value = false
   }
 }
 
@@ -214,7 +225,7 @@ function verifyAndInitializePlugins(): void {
       console.log('合并单元格插件已正确初始化')
       
       if (!mergeCellsPlugin.isEnabled()) {
-        console.log('合并单元格插件已检测到但未启用，正在启用...')
+        console.log('合并单元格插件已检测到但未启用，正在启用...');
         mergeCellsPlugin.enablePlugin()
         hotInstance.render() // 启用后重新渲染表格
       }
@@ -231,6 +242,9 @@ function verifyAndInitializePlugins(): void {
 async function handleAutoLoadFromUrl(): Promise<void> {
   try {
     console.log('开始处理URL自动加载...');
+    
+    // 设置全局加载状态
+    isGlobalLoading.value = true;
     
     // 等待组件初始化完成
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -258,6 +272,11 @@ async function handleAutoLoadFromUrl(): Promise<void> {
       
       previewRef.value.createMultiPreview(products);
       console.log('多预览创建完成');
+      
+      // 在预览创建完成后，关闭全局加载状态
+      setTimeout(() => {
+        isGlobalLoading.value = false;
+      }, 100); // 稍微延迟以确保预览完全渲染
     };
     
     // 单预览函数（作为备用）
@@ -271,6 +290,11 @@ async function handleAutoLoadFromUrl(): Promise<void> {
       
       previewRef.value.enterPreview();
       console.log('单预览触发完成');
+      
+      // 在预览触发完成后，关闭全局加载状态
+      setTimeout(() => {
+        isGlobalLoading.value = false;
+      }, 100); // 稍微延迟以确保预览完全渲染
     };
     
     // 尝试使用多预览模式，传递dataRefresher用于预置文本更新
@@ -287,9 +311,13 @@ async function handleAutoLoadFromUrl(): Promise<void> {
       console.log('URL自动加载和预览成功');
     } else {
       console.log('URL中没有找到合适的参数，跳过自动加载');
+      // 如果没有URL参数，关闭加载状态
+      isGlobalLoading.value = false;
     }
   } catch (error) {
     console.error('URL自动加载失败:', error);
+    // 出现错误时也关闭加载状态
+    isGlobalLoading.value = false;
   }
 }
 </script>

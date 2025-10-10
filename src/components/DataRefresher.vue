@@ -100,7 +100,7 @@ const updateQualityStatus = () => {
     合格状态.value = '不合格';
   }
   
-  console.log(`合格状态计算: 缺陷总数=${缺陷总数.value}, Ac_2.5=${Ac_2_5.value}, 结果=${合格状态.value}`);
+  console.log(`合格状态计算: 缺陷总数=${缺陷总数.value}, Ac_2_5=${Ac_2_5.value}, 结果=${合格状态.value}`);
 };
 
 /**
