@@ -75,14 +75,28 @@ const createEnhancedRenderer = (baseRenderer) => {
   ) {
     // 1. 先移除特殊标记
     if (typeof value === 'string') {
-      // value = value.replace(/\[QUALIFY\]|\[DEFECT\]/g, '');
-      const systemIdentifiers = ['WORKORDER', 'INSPECTION', 'SAMPLE', 'PRODUCT', 'AC1', 'AC25', 'RE1', 'RE25', 'DEFECT', 'QUALIFY', 'QUALITY', 'TIME', 'DELIVERY'];
+      // 定义系统标识符和对应的前后标记
+      const systemMarkers = [
+        { start: '{WO}', end: '{/WO}' }, // 工单号
+        { start: '{DL}', end: '{/DL}' }, // 交货数量
+        { start: '{IN}', end: '{/IN}' }, // 送检数量
+        { start: '{SA}', end: '{/SA}' }, // 抽样数量
+        { start: '{PN}', end: '{/PN}' }, // 产品名称
+        { start: '{A1}', end: '{/A1}' }, // Ac_1
+        { start: '{A2}', end: '{/A2}' }, // Ac_2.5
+        { start: '{R1}', end: '{/R1}' }, // Re_1
+        { start: '{R2}', end: '{/R2}' }, // Re_2.5
+        { start: '{DF}', end: '{/DF}' }, // 缺陷总数
+        { start: '{QL}', end: '{/QL}' }, // 合格数量
+        { start: '{QT}', end: '{/QT}' }, // 合格状态
+        { start: '{TM}', end: '{/TM}' }  // 当前时间
+      ];
 
+      // 移除所有前后标记，只保留标记内的内容
       let displayValue = value;
-
-      systemIdentifiers.forEach(identifier => {
-        const regex = new RegExp(`\\[${identifier}\\]`, 'g');
-        displayValue = displayValue.replace(regex, '');
+      systemMarkers.forEach(marker => {
+        const regex = new RegExp(`${marker.start}\\[.*?\\](.*?)${marker.end}`, 'g');
+        displayValue = displayValue.replace(regex, '$1');
       });
       
       value = displayValue;

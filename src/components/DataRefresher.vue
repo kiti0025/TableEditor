@@ -221,43 +221,43 @@ const replacePresetTextInClonedTable = (clonedElement: HTMLElement, product: Pro
       
       // 替换工单号
       if (content.includes('[WORKORDER]')) {
-        const regex = /\[WORKORDER\][^\[\]\s]*/g;
-        content = content.replace(regex, `[WORKORDER]${product.workOrderNumber}`);
+        const regex = /\{WO\}\[WORKORDER\][^]*?\{\/WO\}/g;
+        content = content.replace(regex, `{WO}[WORKORDER]${product.workOrderNumber}{/WO}`);
         hasChanges = true;
       }
       
       // 替换产品名称
       if (content.includes('[PRODUCT]')) {
-        const regex = /\[PRODUCT\][^\[\]\s]*/g;
-        content = content.replace(regex, `[PRODUCT]${product.productName}`);
+        const regex = /\{PN\}\[PRODUCT\][^]*?\{\/PN\}/g;
+        content = content.replace(regex, `{PN}[PRODUCT]${product.productName}{/PN}`);
         hasChanges = true;
       }
       
       // 替换交货数量
       if (content.includes('[DELIVERY]')) {
-        const regex = /\[DELIVERY\][^\[\]\s]*/g;
-        content = content.replace(regex, `[DELIVERY]${product.totalQuantity}`);
+        const regex = /\{DL\}\[DELIVERY\][^]*?\{\/DL\}/g;
+        content = content.replace(regex, `{DL}[DELIVERY]${product.totalQuantity}{/DL}`);
         hasChanges = true;
       }
       
       // 替换送检数量（等于交货数量）
       if (content.includes('[INSPECTION]')) {
-        const regex = /\[INSPECTION\][^\[\]\s]*/g;
-        content = content.replace(regex, `[INSPECTION]${product.totalQuantity}`);
+        const regex = /\{IN\}\[INSPECTION\][^]*?\{\/IN\}/g;
+        content = content.replace(regex, `{IN}[INSPECTION]${product.totalQuantity}{/IN}`);
         hasChanges = true;
       }
       
       // 替换合格状态（使用当前的合格状态值）
       if (content.includes('[QUALITY]')) {
-        const regex = /\[QUALITY\][^\[\]\s]*/g;
-        content = content.replace(regex, `[QUALITY]${合格状态.value}`);
+        const regex = /\{QT\}\[QUALITY\][^]*?\{\/QT\}/g;
+        content = content.replace(regex, `{QT}[QUALITY]${合格状态.value}{/QT}`);
         hasChanges = true;
       }
       
       // 替换当前时间（使用当前的时间值）
       if (content.includes('[TIME]')) {
-        const regex = /\[TIME\][^\[\]\s]*/g;
-        content = content.replace(regex, `[TIME]${当前时间.value}`);
+        const regex = /\{TM\}\[TIME\][^]*?\{\/TM\}/g;
+        content = content.replace(regex, `{TM}[TIME]${当前时间.value}{/TM}`);
         hasChanges = true;
       }
       
@@ -310,55 +310,55 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
           // 先恢复所有预置文本标记到原始状态（删除标记后的内容）
           // 这样可以确保每次预览时都从原始标记开始替换，避免累积替换
           if (newValue.includes('[WORKORDER]')) {
-            newValue = newValue.replace(/\[WORKORDER\][^\[\]\s]*/g, '[WORKORDER]');
+            newValue = newValue.replace(/\{WO\}\[WORKORDER\][^]*?\{\/WO\}/g, '{WO}[WORKORDER]{/WO}');
             hasChanges = true;
           }
           if (newValue.includes('[PRODUCT]')) {
-            newValue = newValue.replace(/\[PRODUCT\][^\[\]\s]*/g, '[PRODUCT]');
+            newValue = newValue.replace(/\{PN\}\[PRODUCT\][^]*?\{\/PN\}/g, '{PN}[PRODUCT]{/PN}');
             hasChanges = true;
           }
           if (newValue.includes('[DELIVERY]')) {
-            newValue = newValue.replace(/\[DELIVERY\][^\[\]\s]*/g, '[DELIVERY]');
+            newValue = newValue.replace(/\{DL\}\[DELIVERY\][^]*?\{\/DL\}/g, '{DL}[DELIVERY]{/DL}');
             hasChanges = true;
           }
           if (newValue.includes('[INSPECTION]')) {
-            newValue = newValue.replace(/\[INSPECTION\][^\[\]\s]*/g, '[INSPECTION]');
+            newValue = newValue.replace(/\{IN\}\[INSPECTION\][^]*?\{\/IN\}/g, '{IN}[INSPECTION]{/IN}');
             hasChanges = true;
           }
           if (newValue.includes('[QUALITY]')) {
             // 检查是否已经是具体值（包含中文字符），如果是则不处理
             if (!newValue.includes('合格')) {
-              newValue = newValue.replace(/\[QUALITY\][^\[\]\s]*/g, '[QUALITY]');
+              newValue = newValue.replace(/\{QT\}\[QUALITY\][^]*?\{\/QT\}/g, '{QT}[QUALITY]{/QT}');
               hasChanges = true;
             }
           }
           if (newValue.includes('[TIME]')) {
-            newValue = newValue.replace(/\[TIME\][^\[\]\s]*/g, '[TIME]');
+            newValue = newValue.replace(/\{TM\}\[TIME\][^]*?\{\/TM\}/g, '{TM}[TIME]{/TM}');
             hasChanges = true;
           }
           // 添加抽样数量和Ac/Re值的恢复
           if (newValue.includes('[SAMPLE]')) {
-            newValue = newValue.replace(/\[SAMPLE\][^\[\]\s]*/g, '[SAMPLE]');
+            newValue = newValue.replace(/\{SA\}\[SAMPLE\][^]*?\{\/SA\}/g, '{SA}[SAMPLE]{/SA}');
             hasChanges = true;
           }
           if (newValue.includes('[AC1]')) {
-            newValue = newValue.replace(/\[AC1\][^\[\]\s]*/g, '[AC1]');
+            newValue = newValue.replace(/\{A1\}\[AC1\][^]*?\{\/A1\}/g, '{A1}[AC1]{/A1}');
             hasChanges = true;
           }
           if (newValue.includes('[AC25]')) {
-            newValue = newValue.replace(/\[AC25\][^\[\]\s]*/g, '[AC25]');
+            newValue = newValue.replace(/\{A2\}\[AC25\][^]*?\{\/A2\}/g, '{A2}[AC25]{/A2}');
             hasChanges = true;
           }
           if (newValue.includes('[RE1]')) {
-            newValue = newValue.replace(/\[RE1\][^\[\]\s]*/g, '[RE1]');
+            newValue = newValue.replace(/\{R1\}\[RE1\][^]*?\{\/R1\}/g, '{R1}[RE1]{/R1}');
             hasChanges = true;
           }
           if (newValue.includes('[RE25]')) {
-            newValue = newValue.replace(/\[RE25\][^\[\]\s]*/g, '[RE25]');
+            newValue = newValue.replace(/\{R2\}\[RE25\][^]*?\{\/R2\}/g, '{R2}[RE25]{/R2}');
             hasChanges = true;
           }
           if (newValue.includes('[DEFECT]')) {
-            newValue = newValue.replace(/\[DEFECT\][^\[\]\s]*/g, '[DEFECT]');
+            newValue = newValue.replace(/\{DF\}\[DEFECT\][^]*?\{\/DF\}/g, '{DF}[DEFECT]{/DF}');
             hasChanges = true;
           }
           // 注意：对于[QUALIFY]标记，我们不进行恢复操作，
@@ -370,19 +370,19 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
           
           // 然后替换为当前产品的具体值
           if (newValue.includes('[WORKORDER]')) {
-            newValue = newValue.replace(/\[WORKORDER\]/g, `[WORKORDER]${product.workOrderNumber}`);
+            newValue = newValue.replace(/\{WO\}\[WORKORDER\]\{\/WO\}/g, `{WO}[WORKORDER]${product.workOrderNumber}{/WO}`);
             hasChanges = true;
           }
           if (newValue.includes('[PRODUCT]')) {
-            newValue = newValue.replace(/\[PRODUCT\]/g, `[PRODUCT]${product.productName}`);
+            newValue = newValue.replace(/\{PN\}\[PRODUCT\]\{\/PN\}/g, `{PN}[PRODUCT]${product.productName}{/PN}`);
             hasChanges = true;
           }
           if (newValue.includes('[DELIVERY]')) {
-            newValue = newValue.replace(/\[DELIVERY\]/g, `[DELIVERY]${product.totalQuantity}`);
+            newValue = newValue.replace(/\{DL\}\[DELIVERY\]\{\/DL\}/g, `{DL}[DELIVERY]${product.totalQuantity}{/DL}`);
             hasChanges = true;
           }
           if (newValue.includes('[INSPECTION]')) {
-            newValue = newValue.replace(/\[INSPECTION\]/g, `[INSPECTION]${product.totalQuantity}`);
+            newValue = newValue.replace(/\{IN\}\[INSPECTION\]\{\/IN\}/g, `{IN}[INSPECTION]${product.totalQuantity}{/IN}`);
             hasChanges = true;
           }
           // 注意：对于[QUALITY]标记，我们不进行处理，
@@ -392,37 +392,37 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
           if (newValue.includes('[QUALITY]')) {
             // 检查是否仍然是原始标记（不包含中文字符），如果是则替换
             if (!newValue.includes('合格')) {
-              newValue = newValue.replace(/\[QUALITY\]/g, `[QUALITY]${合格状态.value}`);
+              newValue = newValue.replace(/\{QT\}\[QUALITY\]\{\/QT\}/g, `{QT}[QUALITY]${合格状态.value}{/QT}`);
               hasChanges = true;
             }
           }
           if (newValue.includes('[TIME]')) {
-            newValue = newValue.replace(/\[TIME\]/g, `[TIME]${当前时间.value}`);
+            newValue = newValue.replace(/\{TM\}\[TIME\]\{\/TM\}/g, `{TM}[TIME]${当前时间.value}{/TM}`);
             hasChanges = true;
           }
           // 添加抽样数量和Ac/Re值的替换
           if (newValue.includes('[SAMPLE]')) {
-            newValue = newValue.replace(/\[SAMPLE\]/g, `[SAMPLE]${抽样数量.value}`);
+            newValue = newValue.replace(/\{SA\}\[SAMPLE\]\{\/SA\}/g, `{SA}[SAMPLE]${抽样数量.value}{/SA}`);
             hasChanges = true;
           }
           if (newValue.includes('[AC1]')) {
-            newValue = newValue.replace(/\[AC1\]/g, `[AC1]${Ac_1.value}`);
+            newValue = newValue.replace(/\{A1\}\[AC1\]\{\/A1\}/g, `{A1}[AC1]${Ac_1.value}{/A1}`);
             hasChanges = true;
           }
           if (newValue.includes('[AC25]')) {
-            newValue = newValue.replace(/\[AC25\]/g, `[AC25]${Ac_2_5.value}`);
+            newValue = newValue.replace(/\{A2\}\[AC25\]\{\/A2\}/g, `{A2}[AC25]${Ac_2_5.value}{/A2}`);
             hasChanges = true;
           }
           if (newValue.includes('[RE1]')) {
-            newValue = newValue.replace(/\[RE1\]/g, `[RE1]${Re_1.value}`);
+            newValue = newValue.replace(/\{R1\}\[RE1\]\{\/R1\}/g, `{R1}[RE1]${Re_1.value}{/R1}`);
             hasChanges = true;
           }
           if (newValue.includes('[RE25]')) {
-            newValue = newValue.replace(/\[RE25\]/g, `[RE25]${Re_2_5.value}`);
+            newValue = newValue.replace(/\{R2\}\[RE25\]\{\/R2\}/g, `{R2}[RE25]${Re_2_5.value}{/R2}`);
             hasChanges = true;
           }
           if (newValue.includes('[DEFECT]')) {
-            newValue = newValue.replace(/\[DEFECT\]/g, `[DEFECT]${缺陷总数.value}`);
+            newValue = newValue.replace(/\{DF\}\[DEFECT\]\{\/DF\}/g, `{DF}[DEFECT]${缺陷总数.value}{/DF}`);
             hasChanges = true;
           }
           // 注意：对于[QUALIFY]标记，我们不进行全局替换，
@@ -486,9 +486,9 @@ const getInspectionCountFromTable = (): number => {
           const cellValue = props.hotInstance.getDataAtCell(row, col);
           if (cellValue) {
             if (typeof cellValue === 'string') {
-              // 检查带有特殊标记的送检数量
+              // 检查带有特殊标记的送检数量，使用新的前后标记格式
               if (cellValue.includes('[INSPECTION]')) {
-                const match = cellValue.match(/\[INSPECTION\](\d+)/);
+                const match = cellValue.match(/\{IN\}\[INSPECTION\](\d+)\{\/IN\}/);
                 if (match) {
                   return parseInt(match[1], 10);
                 }
@@ -589,9 +589,12 @@ const getQualifiedCountCells = (): Array<{row: number, col: number, value: strin
       for (let col = 0; col < colCount; col++) {
         const cellValue = props.hotInstance.getDataAtCell(row, col);
         if (cellValue) {
-          // 识别带有特殊标记的合格数量单元格
+          // 识别带有特殊标记的合格数量单元格，使用新的前后标记格式
           if (typeof cellValue === 'string' && cellValue.includes('[QUALIFY]')) {
-            qualifiedCountCells.push({row, col, value: cellValue});
+            // 检查是否包含新的前后标记格式
+            if (cellValue.includes('{QL}') && cellValue.includes('{/QL}')) {
+              qualifiedCountCells.push({row, col, value: cellValue});
+            }
           }
         }
       }
@@ -636,7 +639,10 @@ const findBoundQualityStatusCell = (qualifiedCellRow: number, qualifiedCellCol: 
       if (checkRow >= 0 && checkRow < rowCount && checkCol >= 0 && checkCol < colCount) {
         const cellValue = props.hotInstance.getDataAtCell(checkRow, checkCol);
         if (cellValue && typeof cellValue === 'string' && cellValue.includes('[QUALITY]')) {
-          return {row: checkRow, col: checkCol};
+          // 检查是否包含新的前后标记格式
+          if (cellValue.includes('{QT}') && cellValue.includes('{/QT}')) {
+            return {row: checkRow, col: checkCol};
+          }
         }
       }
     }
@@ -663,7 +669,8 @@ const getDefectCountFromTable = (): number | null => {
         if (cellValue) {
           // 识别带有特殊标记的缺陷总数
           if (typeof cellValue === 'string' && cellValue.includes('[DEFECT]')) {
-            const match = cellValue.match(/\[DEFECT\](\d+)/);
+            // 使用新的前后标记格式匹配缺陷总数
+            const match = cellValue.match(/\{DF\}\[DEFECT\](\d+)\{\/DF\}/);
             if (match) {
               return parseInt(match[1], 10);
             }
@@ -717,7 +724,11 @@ const updateQualifiedCountsInTable = (defectCount: number, qualifiedCountCells: 
   qualifiedCountCells.forEach((cell, index) => {
     try {
       // 替换带标记的合格数量为新值
-      const newValue = (cell.value as string).replace(/\[QUALIFY\]\d+/, `[QUALIFY]${counts[index]}`);
+      const regex = /\{QL\}\[QUALIFY\][^]*?\{\/QL\}/g;
+      const newValue = (cell.value as string).replace(
+        regex,
+        `{QL}[QUALIFY]${counts[index]}{/QL}`
+      );
       props.hotInstance.setDataAtCell(cell.row, cell.col, newValue);
       
       // 查找并更新绑定的合格状态单元格
@@ -725,7 +736,7 @@ const updateQualifiedCountsInTable = (defectCount: number, qualifiedCountCells: 
       if (boundQualityCell) {
         // 根据合格数量确定合格状态：0为合格，非0为不合格
         const qualityStatus = counts[index] === 0 ? '合格' : '不合格';
-        const qualityValue = `[QUALITY]${qualityStatus}`;
+        const qualityValue = `{QT}[QUALITY]${qualityStatus}{/QT}`;
         props.hotInstance.setDataAtCell(boundQualityCell.row, boundQualityCell.col, qualityValue);
         console.log(`已更新合格数量单元格(${cell.row},${cell.col})的绑定合格状态为: ${qualityStatus}`);
       }
