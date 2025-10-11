@@ -125,7 +125,8 @@ const loadTable = async (filename) => {
       
       showList.value = false
     } else {
-      alert('加载失败！')
+      alert('列表里尚未保存此客户的文件');
+      window.close();
     }
   } catch (error) {
     alert('加载失败！')
