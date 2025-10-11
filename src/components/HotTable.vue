@@ -33,7 +33,7 @@ import 'handsontable/dist/handsontable.full.min.css'
 import TableToolbar from './TableToolbar.vue'
 import Preview from './Preview.vue'
 import LoadingIndicator from './LoadingIndicator.vue'
-import { autoLoadAndMultiPreview, autoLoadAndPreview, type ProductInfo } from '../urlUtils'
+import { autoLoadAndMultiPreview, autoLoadAndPreview, getCustomerName, parseProductInfo, type ProductInfo } from '../urlUtils'
 
 // 3. 初始化配置
 registerAllModules()
@@ -43,6 +43,19 @@ registerLanguageDictionary('zh-CN', zhCN)
 const isPreviewMode = ref(false)
 // 全局加载状态，初始设置为true，表示应用正在加载中
 const isGlobalLoading = ref(true)
+
+// 检查URL是否携带参数
+const hasUrlParams = () => {
+  // 检查是否有客户名称参数(param2)
+  const customerName = getCustomerName();
+  if (!customerName) {
+    return false;
+  }
+  
+  // 检查是否有产品信息参数(param3)
+  const products = parseProductInfo();
+  return products.length > 0;
+}
 
 // 处理预览状态变化
 const handlePreviewModeChange = (isPreview: boolean) => {
@@ -193,6 +206,11 @@ const hotSettings: Record<string, any> = {
 
 // 组件挂载后处理
 onMounted(() => {
+  // 检查URL是否携带参数，如果不携带参数则立即关闭加载状态
+  if (!hasUrlParams()) {
+    isGlobalLoading.value = false;
+  }
+  
   // 延迟执行以确保组件完全渲染
   setTimeout(() => {
     verifyAndInitializePlugins();
@@ -256,6 +274,16 @@ function verifyAndInitializePlugins(): void {
 async function handleAutoLoadFromUrl(): Promise<void> {
   try {
     console.log('开始处理URL自动加载...');
+    
+    // 检查URL是否携带参数
+    const urlHasParams = hasUrlParams();
+    
+    // 如果URL不携带参数，则直接关闭加载状态
+    if (!urlHasParams) {
+      console.log('URL中没有找到合适的参数，跳过自动加载');
+      isGlobalLoading.value = false;
+      return;
+    }
     
     // 设置全局加载状态
     isGlobalLoading.value = true;
