@@ -211,5 +211,20 @@ defineExpose({
     margin: 0;
     border: none;
   }
+  
+  /* 隐藏TableToolbar组件 */
+  :global(.table-toolbar) {
+    display: none !important;
+  }
+  
+  /* 隐藏预览按钮 */
+  .preview-btn {
+    display: none !important;
+  }
+  
+  /* 隐藏预览按钮的容器 */
+  .preview-wrapper {
+    display: none !important;
+  }
 }
 </style>
