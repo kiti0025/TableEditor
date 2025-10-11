@@ -1,6 +1,12 @@
 <template>
   <div class="preview-wrapper">
-    <button class="preview-btn" @click="enterPreview" title="预览">预览</button>
+    <button class="preview-btn" @click="enterPreview" title="预览">
+      <svg width="18" height="18" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -168,7 +174,7 @@ defineExpose({
 
 <style scoped>
 .preview-btn {
-  padding: 4px 12px;
+  /* padding: 4px 12px; */
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 12px;

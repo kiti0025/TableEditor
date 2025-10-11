@@ -130,7 +130,7 @@ const previewRef = ref(null)
 
 // 生成100行26列的空表格数据
 const spreadsheetData = reactive<Array<Array<string>>>(
-  Array.from({ length: 100 }, () => Array(26).fill(''))
+  Array.from({ length: 52 }, () => Array(26).fill(''))
 )
 
 // 5. Handsontable核心配置 - 按功能模块化组织
@@ -374,10 +374,10 @@ async function handleAutoLoadFromUrl(): Promise<void> {
 }
 .custom-component {
   display: flex;
-  gap: 5px;
+  /* gap: -5px; */
   align-items: center; 
   background-color: #f5f5f5;
   width: fit-content; 
-  padding: 0 5px;
+  /* padding: 0 20px; */
 }
 </style>

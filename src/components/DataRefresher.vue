@@ -1,5 +1,5 @@
 <template>
-  <div class="data-refresher">
+  <!-- <div class="data-refresher">
     <button 
       class="refresh-button"
       @click="refreshData"
@@ -7,7 +7,7 @@
     >
       刷新
     </button>
-  </div>
+  </div> -->
 </template>
 
 <script setup lang="ts">
