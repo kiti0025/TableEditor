@@ -19,10 +19,30 @@ const emit = defineEmits<{
   'preview-mode-change': [boolean]
 }>();
 
+// 存储当前活动的预览容器引用
+let activePreviewContainer = null;
+
 // 检查URL是否携带参数
 const hasUrlParams = () => {
   const products = parseProductInfo();
   return products.length > 0;
+};
+
+// 清理现有预览容器
+const clearExistingPreview = () => {
+  // 移除当前活动的预览容器
+  if (activePreviewContainer && document.body.contains(activePreviewContainer)) {
+    document.body.removeChild(activePreviewContainer);
+    activePreviewContainer = null;
+  }
+  
+  // 额外安全检查：移除所有可能存在的预览容器
+  const existingContainers = document.querySelectorAll('.preview-container');
+  existingContainers.forEach(container => {
+    if (container !== activePreviewContainer && document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
+  });
 };
 
 // 进入预览模式
@@ -36,10 +56,14 @@ const enterPreview = () => {
   if (!hotElement) return;
   
   try {
+    // 清理现有预览容器
+    clearExistingPreview();
+    
     // 创建预览容器
     const previewWrapper = document.createElement('div');
     previewWrapper.className = 'preview-container';
     document.body.appendChild(previewWrapper);
+    activePreviewContainer = previewWrapper;
     
     // 克隆整个表格
     const tableClone = hotElement.cloneNode(true) as HTMLElement;
@@ -52,7 +76,7 @@ const enterPreview = () => {
         if (event.target === previewWrapper) {
           // 通知父组件退出预览模式
           emit('preview-mode-change', false);
-          previewWrapper.remove();
+          clearExistingPreview();
           previewWrapper.removeEventListener('click', handlePreviewClick);
         }
       });
@@ -80,24 +104,26 @@ const createMultiPreview = (products: ProductInfo[]) => {
   }
   
   try {
+    // 清理现有预览容器
+    clearExistingPreview();
+    
     // 创建一个主预览容器
     const mainPreviewWrapper = document.createElement('div');
     mainPreviewWrapper.className = 'preview-container';
     document.body.appendChild(mainPreviewWrapper);
+    activePreviewContainer = mainPreviewWrapper;
     
     // 为每个产品创建预览区块
     products.forEach((product, index) => {
       console.log(`正在为第${index + 1}个产品创建预览:`, product);
       
       // 为每个产品单独刷新所有预置文本数据（包括随机数据）
-      // 这确保每组预览都有独立的缺陷总数、合格数量等随机生成的数据
       if (props.dataRefresher?.refreshAllPresetTextsForPreview) {
         props.dataRefresher.refreshAllPresetTextsForPreview(product);
         console.log(`已为第${index + 1}个产品刷新所有预置文本数据`);
       }
       
       // 然后为当前产品替换URL参数相关的预置文本
-      // 这确保每组预览显示对应产品的工单号、产品名称等URL参数数据
       if (props.dataRefresher?.temporaryReplacePresetTextInTable) {
         props.dataRefresher.temporaryReplacePresetTextInTable(products, index);
         console.log(`已为第${index + 1}个产品在原始表格上替换预置文本`);
@@ -125,10 +151,6 @@ const createMultiPreview = (products: ProductInfo[]) => {
       
       console.log(`第${index + 1}个预览区块创建完成，产品:`, product.productName);
     });
-    
-    // 只有在URL不携带参数时才添加点击预览容器退出预览的功能
-    // 注意：对于多预览，即使URL携带参数，我们也不添加退出功能，因为这是自动加载的场景
-    // 但如果需要，可以添加一个"返回"按钮而不是点击空白处退出
     
   } catch (error) {
     console.error('创建多预览时发生错误:', error);
@@ -177,6 +199,7 @@ defineExpose({
   margin-bottom: 30px;
   border-bottom: 2px solid #ddd;
   padding-bottom: 20px;
+  page-break-inside: avoid;
 }
 
 :global(.product-preview-section:last-child) {
@@ -193,16 +216,32 @@ defineExpose({
 
 /* 打印样式优化 */
 @media print {
+  body * {
+    visibility: hidden !important;
+  }
+  
+  body .preview-container,
+  body .preview-container * {
+    visibility: visible !important;
+  }
+  
   :global(.preview-container) {
-    position: static;
+    position: absolute;
+    top: 0;
+    left: 0;
     padding: 0;
     background: white;
+    margin: 0;
+    width: 100%;
+    height: auto;
+    overflow: visible;
   }
   
   :global(.product-preview-section) {
     margin-bottom: 0;
     border-bottom: none;
     padding-bottom: 0;
+    page-break-inside: avoid;
   }
   
   :global(.page-break) {
@@ -212,19 +251,10 @@ defineExpose({
     border: none;
   }
   
-  /* 隐藏TableToolbar组件 */
-  :global(.table-toolbar) {
-    display: none !important;
-  }
-  
-  /* 隐藏预览按钮 */
-  .preview-btn {
-    display: none !important;
-  }
-  
-  /* 隐藏预览按钮的容器 */
-  .preview-wrapper {
-    display: none !important;
+  /* 确保没有任何额外的空白页 */
+  @page {
+    margin: 0;
+    padding: 0;
   }
 }
 </style>
