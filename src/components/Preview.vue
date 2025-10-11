@@ -1,16 +1,13 @@
 <template>
   <div class="preview-wrapper">
     <button class="preview-btn" @click="enterPreview" title="预览">预览</button>
-    <!-- 登录界面 -->
-    <Login v-if="showLogin" @login-success="handleLoginSuccess" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import type { ProductInfo } from '../urlUtils';
 import { parseProductInfo } from '../urlUtils'; // 导入解析URL参数的函数
-import Login from './Login.vue'; // 导入登录组件
 
 interface PreviewProps {
   hotInstance: any;
@@ -22,38 +19,14 @@ const emit = defineEmits<{
   'preview-mode-change': [boolean]
 }>();
 
-// 控制是否显示登录界面
-const showLogin = ref(false);
-
-// 检查用户是否已登录
-const isLoggedIn = () => {
-  return localStorage.getItem('isLoggedIn') === 'true';
-};
-
 // 检查URL是否携带参数
 const hasUrlParams = () => {
   const products = parseProductInfo();
   return products.length > 0;
 };
 
-// 处理登录成功事件
-const handleLoginSuccess = () => {
-  showLogin.value = false;
-  // 登录成功后通知父组件退出预览模式，直接进入编辑界面
-  emit('preview-mode-change', false);
-};
-
 // 进入预览模式
 const enterPreview = () => {
-  // 检查URL是否携带参数
-  const urlHasParams = hasUrlParams();
-  
-  // 如果URL不携带参数且用户未登录，则显示登录界面
-  if (!urlHasParams && !isLoggedIn()) {
-    showLogin.value = true;
-    return;
-  }
-  
   if (!props.hotInstance) return;
   
   // 通知父组件进入预览模式
@@ -73,7 +46,7 @@ const enterPreview = () => {
     previewWrapper.appendChild(tableClone);
     
     // 只有在URL不携带参数时才添加点击预览容器退出预览的功能
-    if (!urlHasParams) {
+    if (!hasUrlParams()) {
       // 添加点击预览容器退出预览的功能
       previewWrapper.addEventListener('click', function handlePreviewClick(event) {
         if (event.target === previewWrapper) {
@@ -163,14 +136,6 @@ const createMultiPreview = (products: ProductInfo[]) => {
     emit('preview-mode-change', false);
   }
 };
-
-// 组件挂载时检查是否需要显示登录界面
-onMounted(() => {
-  // 如果URL不携带参数且用户未登录，则显示登录界面
-  if (!hasUrlParams() && !isLoggedIn()) {
-    showLogin.value = true;
-  }
-});
 
 // 暴露给父组件
 defineExpose({
