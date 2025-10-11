@@ -40,6 +40,32 @@ const props = defineProps<QualificationTextInputProps>();
 // 当前选中的文本类型
 const selectedTextType = ref<string>('');
 
+// 数字格式化工具函数
+// 只显示不为0的小数部分，例如：300.000 显示为 300，300.200 显示为 300.2
+const formatNumber = (value: string | number): string => {
+  if (typeof value === 'number') {
+    // 如果是整数，直接返回
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+    // 如果是小数，去掉末尾的0
+    const str = value.toString();
+    return str.replace(/\.?0+$/, '');
+  } else if (typeof value === 'string') {
+    // 如果是字符串，先转换为数字再处理
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+      return value; // 如果不是有效数字，直接返回原字符串
+    }
+    // 如果是整数，直接返回
+    if (Number.isInteger(num)) {
+      return num.toString();
+    }
+    // 如果是小数，去掉末尾的0
+    return num.toString().replace(/\.?0+$/, '');
+  }
+  return String(value);
+};
 
 const 工单号 = ref<string>("xx工单号xx");
 const 产品名称 = ref<string>("xx产品名称xx");
@@ -356,10 +382,10 @@ const insertText = () => {
           valueToInsert = `{WO}[WORKORDER]${工单号.value}{/WO}`;
           break;
         case '交货数量':
-          valueToInsert = `{DL}[DELIVERY]${交货数量.value}{/DL}`;
+          valueToInsert = `{DL}[DELIVERY]${formatNumber(交货数量.value)}{/DL}`;
           break;
         case '送检数量':
-          valueToInsert = `{IN}[INSPECTION]${送检数量.value}{/IN}`;
+          valueToInsert = `{IN}[INSPECTION]${formatNumber(送检数量.value)}{/IN}`;
           break;
         case '抽样数量':
           valueToInsert = `{SA}[SAMPLE]${抽样数量.value}{/SA}`;

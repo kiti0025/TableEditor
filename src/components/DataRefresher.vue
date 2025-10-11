@@ -41,6 +41,33 @@ const emit = defineEmits<{
   }];
 }>();
 
+// 数字格式化工具函数
+// 只显示不为0的小数部分，例如：300.000 显示为 300，300.200 显示为 300.2
+const formatNumber = (value: string | number): string => {
+  if (typeof value === 'number') {
+    // 如果是整数，直接返回
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+    // 如果是小数，去掉末尾的0
+    const str = value.toString();
+    return str.replace(/\.?0+$/, '');
+  } else if (typeof value === 'string') {
+    // 如果是字符串，先转换为数字再处理
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+      return value; // 如果不是有效数字，直接返回原字符串
+    }
+    // 如果是整数，直接返回
+    if (Number.isInteger(num)) {
+      return num.toString();
+    }
+    // 如果是小数，去掉末尾的0
+    return num.toString().replace(/\.?0+$/, '');
+  }
+  return String(value);
+};
+
 // 定义所有预置文本相关的数据变量
 // 基础数据
 const 抽样数量 = ref<number>(0);
@@ -69,15 +96,12 @@ onMounted(() => {
 
 // 更新其他预置文本的逻辑（合格状态、当前时间）
 const updateOtherPresetTexts = () => {
-  // 更新当前时间
+  // 更新当前时间 - 只显示年月日
   const now = new Date();
-  const timeString = now.toLocaleString('zh-CN', {
+  const timeString = now.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+    day: '2-digit'
   });
   当前时间.value = timeString;
   
@@ -93,7 +117,7 @@ const updateOtherPresetTexts = () => {
 // 计算合格状态（基于缺陷总数和Ac/Re值计算）
 // 注意：对于与合格数量绑定的合格状态，应在updateQualifiedCountsInTable方法中单独处理
 const updateQualityStatus = () => {
-  // 如果缺陷总数小于等于Ac_2.5，则合格；否则不合格
+  // 如果缺陷总数小于等于Ac_2_5，则合格；否则不合格
   if (缺陷总数.value <= Ac_2_5.value) {
     合格状态.value = '合格';
   } else {
@@ -113,8 +137,8 @@ const updatePresetTextFromUrlParams = (product: ProductInfo) => {
   // 更新URL参数相关的预置文本
   工单号.value = product.workOrderNumber;
   产品名称.value = product.productName;
-  交货数量.value = product.totalQuantity;
-  送检数量.value = product.totalQuantity; // 送检数量等于交货数量
+  交货数量.value = formatNumber(product.totalQuantity);
+  送检数量.value = formatNumber(product.totalQuantity); // 送检数量等于交货数量
   
   // 更新其他预置文本（合格状态、当前时间）
   updateOtherPresetTexts();
@@ -378,11 +402,11 @@ const temporaryReplacePresetTextInTable = (products: ProductInfo[], productIndex
             hasChanges = true;
           }
           if (newValue.includes('[DELIVERY]')) {
-            newValue = newValue.replace(/\{DL\}\[DELIVERY\]\{\/DL\}/g, `{DL}[DELIVERY]${product.totalQuantity}{/DL}`);
+            newValue = newValue.replace(/\{DL\}\[DELIVERY\]\{\/DL\}/g, `{DL}[DELIVERY]${formatNumber(product.totalQuantity)}{/DL}`);
             hasChanges = true;
           }
           if (newValue.includes('[INSPECTION]')) {
-            newValue = newValue.replace(/\{IN\}\[INSPECTION\]\{\/IN\}/g, `{IN}[INSPECTION]${product.totalQuantity}{/IN}`);
+            newValue = newValue.replace(/\{IN\}\[INSPECTION\]\{\/IN\}/g, `{IN}[INSPECTION]${formatNumber(product.totalQuantity)}{/IN}`);
             hasChanges = true;
           }
           // 注意：对于[QUALITY]标记，我们不进行处理，
